@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WAK 1.0.5.10</title>
+  <title>WAK 1.0.5.11</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
 @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;600;700&display=swap');
@@ -214,7 +214,7 @@ body {
 <body class="bg-gray-800 text-white flex flex-col items-center justify-center min-h-screen p-4">
 
   <div class="w-full max-w-4xl mx-auto">
-    <h1 class="medieval-title text-5xl text-center mb-2 text-yellow-300">WAK 1.0.5.10</h1>
+    <h1 class="medieval-title text-5xl text-center mb-2 text-yellow-300">WAK 1.0.5.11</h1>
     <p class="text-center mb-4 text-gray-400">22.08.25</p>
 
     <!-- Player Info -->
@@ -332,13 +332,12 @@ body {
       isGameOver: false,
       turnAction: null, // 'king_block' | 'capture_placement' | null
       capturePlacementData: null,
-      // lastCaptureOrigin: null,  <-- DELETE THIS LINE
-      // justCaptured: null,       <-- DELETE THIS LINE
-      captureCooldown: 0, // <-- ADD THIS LINE to track the cooldown
-      highlights: { 
-        map: new Map(), 
-        selection: null, 
-        capSpots: new Set(),
+      lastCaptureOrigin: null, // {r,c} of the last capture origin
+      justCaptured: null, // 'white' or 'black' who was just captured
+      highlights: { // UI-only, applied during render
+        map: new Map(), // key "r,c" -> {type:'king_move'|'action_move'|'mushroom_move', isCapture:boolean}
+        selection: null, // {r,c}
+        capSpots: new Set(), // keys "r,c" for capture placement
       },
     };
 
@@ -589,6 +588,7 @@ body {
         if (me.pos && (me.pos.r !== r || me.pos.c !== c)){
           saveState(); // Save state for undo
           me.pos = { r,c };
+          clickedCard.isImpassable = true; // make the mushroom ring impassable after teleport
           clearHighlights();
           renderBoard();
           endTurn();
@@ -681,89 +681,89 @@ body {
 
     // info: {type:'king_move'|'action_move'|'mushroom_move', isCapture:boolean}
     function handleMove(toR, toC, info){
-      saveState(); // Save state for undo
+  const meColor = gameState.currentPlayer;
+  const oppColor= meColor==='white' ? 'black':'white';
+  const fromR = gameState.selectedTokenPos.r;
+  const fromC = gameState.selectedTokenPos.c;
 
-      const { r:fromR, c:fromC } = gameState.selectedTokenPos;
-      const fromCard = gameState.board[fromR][fromC];
-      const toCard   = gameState.board[toR][toC];
+  // Prevent illegal recaptures
+  const isLastCaptureOrigin = gameState.lastCaptureOrigin &&
+      gameState.lastCaptureOrigin.r === fromR && gameState.lastCaptureOrigin.c === fromC;
+  const wasJustCaptured = gameState.justCaptured === meColor;
 
-      const meColor = gameState.currentPlayer;
-      const oppColor= meColor==='white' ? 'black':'white';
-      const isCapture = isOccupiedByPlayer(toR,toC,oppColor) && info.type==='action_move';
+  if (info.isCapture && (wasJustCaptured || isLastCaptureOrigin)){
+    setMessage("Cannot immediately recapture after being captured.");
+    clearHighlights();
+    return; // Stop the move
+  }
 
-      // Move the token
-      gameState.players[meColor].pos = { r:toR, c:toC };
+  saveState(); // Save state for undo
 
-      // Flip destination if it was face down; check win
-      if (!toCard.isFaceUp){
-        toCard.isFaceUp = true;
-        if (checkLastFaceDownWin(meColor)) return;
-      }
+  const fromCard = gameState.board[fromR][fromC];
+  const toCard   = gameState.board[toR][toC];
 
-      clearHighlights();
+  // Move the token
+  gameState.players[meColor].pos = { r:toR, c:toC };
 
-      //Capture handling
-      if (isCapture){
-        handleCapture(oppColor, toR, toC, fromR, fromC);
-        saveState(); // Save state after capture for undo
-        return; // turn continues after placement selection
-      }
+  // Flip destination if face down
+  if (!toCard.isFaceUp){
+    toCard.isFaceUp = true;
+    if (checkLastFaceDownWin(meColor)) return;
+  }
 
-      // Apply move-specific tile changes
-      if (info.type === 'king_move'){
-        // If moving off a Start King, it flips to Mushroom Ring immediately
-        if (fromCard.name === CARD_TYPES.START_KING.name){
-          fromCard.name = CARD_TYPES.MUSHROOM.name;
-          fromCard.move = 'mushroom';
-          fromCard.isFaceUp = true;
-          fromCard.isImpassable = false;
-        }
-        // Place block cube
-        gameState.turnAction = 'king_block';
-        setMessage(`${cap(meColor)}, place the block cube.`);
-        renderBoard();
-        return;
-      }
+  clearHighlights();
 
-      if (info.type === 'action_move'){
-        // Origin becomes impassable (unless it was Start King handled above)
-        if (fromCard.name === CARD_TYPES.START_KING.name){
-          fromCard.name = CARD_TYPES.MUSHROOM.name;
-          fromCard.move = 'mushroom';
-          fromCard.isFaceUp = true;
-          fromCard.isImpassable = true;
-        } else {
-          fromCard.isImpassable = true;
-        }
-        endTurn();
-        return;
-      }
+  // Handle capture
+  const isCapture = info.isCapture;
+  if (isCapture){
+    handleCapture(oppColor, toR, toC, fromR, fromC);
+    saveState(); // capture state
+    return;
+  }
 
-      //Make the origin card impassable for king action cards
-      if (fromCard.move === 'king'){
-        fromCard.isImpassable = true;
-      }
+  // King / card / mushroom moves
+  if (info.type === 'king_move'){
+    if (fromCard.name === CARD_TYPES.START_KING.name){
+      fromCard.name = CARD_TYPES.MUSHROOM.name;
+      fromCard.move = 'mushroom';
+      fromCard.isFaceUp = true;
+      fromCard.isImpassable = false;
+    }
+    gameState.turnAction = 'king_block';
+    setMessage(`${cap(meColor)}, place the block cube.`);
+    renderBoard();
+    return;
+  }
 
-      if (info.type === 'mushroom_move'){
-        toCard.isImpassable = true;
-        endTurn();
-        return;
-      }
+  if (info.type === 'action_move'){
+    if (fromCard.name === CARD_TYPES.START_KING.name){
+      fromCard.name = CARD_TYPES.MUSHROOM.name;
+      fromCard.move = 'mushroom';
+      fromCard.isFaceUp = true;
+      fromCard.isImpassable = true;
+    } else {
+      fromCard.isImpassable = true;
+    }
+    endTurn();
+    return;
+  }
 
-      //place block cube
-      gameState.turnAction = 'king_block';
-      setMessage(`${cap(meColor)}, place the block cube on an unoccupied card.`);
-      renderBoard();
-      return;
-      }
+  if (info.type === 'mushroom_move'){
+    toCard.isImpassable = true;
+    endTurn();
+    return;
+  }
+}
 
     function handleCapture(opponentColor, captureR, captureC, fromR, fromC){
       //bloodies the opponent
       gameState.players[opponentColor].isBloodied = true;
       gameState.players[gameState.currentPlayer].captures++;
-      
-      // SET THE CAPTURE COOLDOWN. It will last for 2 turns (one for each player).
-      gameState.captureCooldown = 2; 
+      // record the last capture origin
+      gameState.lastCaptureOrigin = { r: fromR, c: fromC };
+
+      // record opponent that was just captured
+      gameState.justCaptured = opponentColor;
 
       // Build adjacent valid placement spots
       const validSpots = [];
@@ -813,79 +813,75 @@ body {
       renderBoard();
     }
 
-    function highlightValidMoves(r, c) {
+    function highlightValidMoves(r,c){
       clearHighlights();
-      gameState.highlights.selection = { r, c };
+      gameState.highlights.selection = { r,c };
+      const card = gameState.board[r][c];
+      if (card.move && card.move!=='mushroom'){
+        const moves = getPieceMoves(r,c,card.move,gameState.currentPlayer);
+        for (const m of moves){
+          gameState.highlights.map.set(keyRC(m.r,m.c), {type:'action_move',isCapture: !!m.isCapture});
+      }
+      }
 
-      // Get ALL valid moves from the function that correctly checks the cooldown
-      const allMoves = calculateValidMoves(r, c);
-
-      for (const move of allMoves) {
-        let highlightType;
-        // Determine highlight type based on the move's properties
-        if (move.type === 'action_move') {
-          highlightType = { type: 'action_move', isCapture: !!move.isCapture };
-        } else if (move.type === 'mushroom_move') {
-          highlightType = { type: 'mushroom_move', isCapture: false };
-        } else {
-          // It's a king_move, which is handled by highlightKingMoves
-          continue;
-        }
-        gameState.highlights.map.set(keyRC(move.r, move.c), highlightType);
+      const mushroomMoves = calculateValidMoves(r,c).filter(m => m.type==='mushroom_move');
+      for (const m of mushroomMoves){
+        gameState.highlights.map.set(keyRC(m.r,m.c), {type:'mushroom_move', isCapture:false});
       }
 
       renderBoard();
     }
-    
+
     function calculateValidMoves(r,c){
-      const me = gameState.currentPlayer;
-      const card = gameState.board[r][c];
-      const res = [];
+  const me = gameState.currentPlayer;
+  const card = gameState.board[r][c];
+  const res = [];
 
-      // 1) King action (1 step, no capture)
-      for (let dr=-1; dr<=1; dr++){
-        for (let dc=-1; dc<=1; dc++){
-          if (dr===0 && dc===0) continue;
-          const nr=r+dr, nc=c+dc;
-          if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
-            res.push({ r:nr, c:nc, type:'king_move', isCapture: false });
-          }
-        }
+  const isLastCaptureOrigin = gameState.lastCaptureOrigin &&
+      gameState.lastCaptureOrigin.r === r && gameState.lastCaptureOrigin.c === c;
+  const wasJustCaptured = gameState.justCaptured === me;
+
+  // 1) King action (1 step, no capture)
+  for (let dr=-1; dr<=1; dr++){
+    for (let dc=-1; dc<=1; dc++){
+      if (dr===0 && dc===0) continue;
+      const nr=r+dr, nc=c+dc;
+      if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
+        res.push({ r:nr, c:nc, type:'king_move', isCapture: false });
       }
-
-      // 2) Move as the card's piece (captures allowed), except mushrooms
-      if (card.move && card.move!=='mushroom'){
-          const pieceMoves = getPieceMoves(r,c,card.move,me);
-
-          for (const move of pieceMoves){
-            // NEW COOLDOWN CHECK: Prevent a capture move if the cooldown is active.
-            if (move.isCapture && gameState.captureCooldown > 0) {
-              setMessage("Cannot capture for one round after a capture occurs.");
-              continue; // Skip this move
-            }
-            res.push({...move, type:'action_move'});
-          }
-      }
-      
-      // 3) Teleport to any face-up, non-impassable Mushroom Ring (no capture)
-      for (let row=0; row<4; row++){
-        for (let col=0; col<4; col++){
-          const t = gameState.board[row][col];
-          if (r === row && c === col) continue; // Cannot teleport to the same spot
-          if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !isOccupied(row,col)){
-            res.push({ r:row, c:col, type:'mushroom_move', isCapture:false });
-          }
-        }
-      }
-
-      // De-dup on destination
-      const seen = new Set();
-      return res.filter(m=>{
-        const k=keyRC(m.r,m.c);
-        if (seen.has(k)) return false;
-        seen.add(k); return true;
-      });
     }
+  }
+
+  // 2) Card moves (except mushrooms)
+  if (card.move && card.move!=='mushroom'){
+    const pieceMoves = getPieceMoves(r,c,card.move,me);
+    for (const move of pieceMoves){
+      // Skip illegal recaptures
+      if (move.isCapture && (wasJustCaptured || isLastCaptureOrigin)) continue;
+      res.push({...move, type:'action_move'});
+    }
+  }
+
+  // 3) Mushroom teleport moves
+  for (let row=0; row<4; row++){
+    for (let col=0; col<4; col++){
+      const t = gameState.board[row][col];
+      if (r === row && c === col) continue;
+      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !isOccupied(row,col)){
+        res.push({ r:row, c:col, type:'mushroom_move', isCapture:false });
+      }
+    }
+  }
+
+  // De-dup
+  const seen = new Set();
+  return res.filter(m=>{
+    const k=keyRC(m.r,m.c);
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
 
     function getPieceMoves(r,c,piece,meColor){
       const moves=[];
@@ -993,9 +989,9 @@ body {
       gameState.selectedTokenPos = null;
       clearHighlights();
 
-      // Tick down the capture cooldown if it's active.
-      if (gameState.captureCooldown > 0) {
-        gameState.captureCooldown--;
+      // Reset justCaptured flag at the end of the turn
+      if (gameState.justCaptured === gameState.currentPlayer){
+        gameState.justCaptured = null;
       }
 
       // Switch player
