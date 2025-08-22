@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WAK 1.0.5.7</title>
+  <title>WAK 1.0.5.10</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
 @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;600;700&display=swap');
@@ -170,7 +170,7 @@ body {
 
 /* Impassable cards maintain rotation */
 .card.impassable:hover {
-  transform: scale(1.05);
+  transform: rotate(90deg) scale(1.05);
   cursor: not-allowed;
 }
 
@@ -198,14 +198,24 @@ body {
   box-shadow: inset 0 0 0 4px rgba(255,215,0,0.9), 0 0 12px rgba(255,215,0,0.7);
   transform: scale(1.05);
 }
+
+/* 🔒 OVERRIDE: Because why have proper logic with impassable cards when I can jerry rig a solution */
+.card.impassable.highlight-move:hover,
+.card.impassable.highlight-capture:hover,
+.card.impassable.highlight-selected:hover,
+.card.impassable.highlight-block:hover {
+  transform: rotate(90deg); /* or 'none' if you want no rotation */
+  cursor: not-allowed;
+  box-shadow: none; /* optional: disables highlight glow */
+}
 </style>
 </head>
 
 <body class="bg-gray-800 text-white flex flex-col items-center justify-center min-h-screen p-4">
 
   <div class="w-full max-w-4xl mx-auto">
-    <h1 class="medieval-title text-5xl text-center mb-2 text-yellow-300">WAK 1.0.5.7</h1>
-    <p class="text-center mb-4 text-gray-400">21.08.25</p>
+    <h1 class="medieval-title text-5xl text-center mb-2 text-yellow-300">WAK 1.0.5.10</h1>
+    <p class="text-center mb-4 text-gray-400">22.08.25</p>
 
     <!-- Player Info -->
     <div class="flex justify-around mb-4 text-lg">
@@ -226,6 +236,16 @@ body {
 
     <!-- Game Messages -->
     <div id="message-board" class="text-center mt-4 h-12 text-xl font-semibold text-yellow-200"></div>
+
+  <!-- move choice -->
+   <div id="move-choice" class="hidden flex justify-center gap-4 mt-2">
+    <button id="king-move-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">King Action</button>
+    <button id="card-move-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Card Action</button>
+   </div>
+
+    <!--Undo Button-->
+    <button id="undo-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Undo</button>
+
 
     <!-- Rules Section -->
     <div class="mt-6 text-center">
@@ -270,6 +290,12 @@ body {
     const modalButton = document.getElementById('modal-button');
     const rulesToggle = document.getElementById('rules-toggle');
     const rulesBox    = document.getElementById('rules-box');
+    const undoButton   = document.getElementById('undo-btn');
+
+    // --- undo button listener ---
+    undoButton.addEventListener('click', () => {
+      undoMove();
+    });
 
     // Rules toggle functionality
     rulesToggle.addEventListener('click', () => {
@@ -299,6 +325,7 @@ body {
         white: { token:'W', captures:0, matches:0, isBloodied:false, pos:null },
         black: { token:'B', captures:0, matches:0, isBloodied:false, pos:null },
       },
+      turnCount: 0,
       currentPlayer: 'white',
       blockCubePos: null,
       selectedTokenPos: null,
@@ -396,7 +423,28 @@ body {
       gameState.board[2][1].isFaceUp = true;
       gameState.board[2][2].isFaceUp = true;
     }
+    // --- Undo & History ---
+    let history = [];
 
+    function saveState(){
+      const stateCopy = JSON.parse(JSON.stringify(gameState));
+      stateCopy.highlights.capSpots = Array.from(gameState.highlights.capSpots);
+      stateCopy.highlights.map = Array.from(gameState.highlights.map.entries());
+      history.push(JSON.stringify(stateCopy));
+    }
+
+    function undoMove(){
+      if (history.length === 0) return;
+      
+        const saved = JSON.parse(history.pop());
+        //restore map and set
+        saved.highlights.map = new Map(saved.highlights.map);
+        saved.highlights.capSpots = new Set(saved.highlights.capSpots);
+        gameState = saved;
+        renderBoard();
+        setMessage("Move undone.")
+      
+    }
     // --- Rendering ---
     function renderBoard(){
       gameBoard.innerHTML='';
@@ -543,7 +591,7 @@ body {
         return;
       }
 
-      // --- SELECTION LOGIC ---
+      // --- Token Selection Logic ---
       const me = gameState.players[gameState.currentPlayer];
       // Case 1: Clicked the current player's token
       if (me.pos && me.pos.r===r && me.pos.c===c){
@@ -551,11 +599,27 @@ body {
         if (gameState.selectedTokenPos && gameState.selectedTokenPos.r === r && gameState.selectedTokenPos.c === c) {
             gameState.selectedTokenPos = null;
             clearHighlights();
+            document.getElementById("move-choice").classList.add("hidden");
         } else {
         // Otherwise, select it and highlight its moves
             gameState.selectedTokenPos = { r,c };
-            highlightValidMoves(r,c);
+
+            if (gameState.turnCount <2){
+              highlightKingMoves(r,c);
+            }else{
+
+            document.getElementById("move-choice").classList.remove("hidden");
+            document.getElementById("king-move-btn").onclick = () => { 
+              gameState.moveType = 'king';
+              highlightKingMoves(r,c);
+            }
+            document.getElementById("card-move-btn").onclick = () => { 
+              gameState.moveType = 'card';
+              highlightValidMoves(r,c);
+            }
+            // highlightValidMoves(r,c);
         }
+      }
         renderBoard();
         return;
       }
@@ -601,6 +665,8 @@ body {
 
     // info: {type:'king_move'|'action_move'|'mushroom_move', isCapture:boolean}
     function handleMove(toR, toC, info){
+      saveState(); // Save state for undo
+
       const { r:fromR, c:fromC } = gameState.selectedTokenPos;
       const fromCard = gameState.board[fromR][fromC];
       const toCard   = gameState.board[toR][toC];
@@ -622,6 +688,7 @@ body {
 
       if (isCapture){
         handleCapture(oppColor, toR, toC, fromR, fromC);
+        saveState(); // Save state after capture for undo
         return; // turn continues after placement selection
       }
 
@@ -716,15 +783,32 @@ body {
     }
 
     // --- Move generation & highlights ---
+    function highlightKingMoves(r,c){
+      clearHighlights();
+      gameState.highlights.selection = {r,c};
+      for (let dr=-1; dr<=1; dr++){
+        for (let dc=-1; dc<=1; dc++){
+          if (dr===0 & dc===0) continue;
+          const nr=r+dr, nc=c+dc;
+          if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
+            gameState.highlights.map.set(keyRC(nr,nc), {type:'king_move', isCapture: false});
+          }
+        }
+      }
+      renderBoard();
+    }
+
     function highlightValidMoves(r,c){
       clearHighlights();
       gameState.highlights.selection = { r,c };
-      const moves = calculateValidMoves(r,c);
-      
-      for (const m of moves){
-        gameState.highlights.map.set(keyRC(m.r,m.c), { type:m.type, isCapture: !!m.isCapture});
+      const card = gameState.board[r][c];
+      if (card.move && card.move!=='mushroom'){
+        const moves = getPieceMoves(r,c,card.move,gameState.currentPlayer);
+        for (const m of moves){
+          gameState.highlights.map.set(keyRC(m.r,m.c), {type:'action_move',isCapture: !!m.isCapture});
       }
-      // This function now ONLY updates the game state. The render is handled by onCellClick.
+      }
+      renderBoard();
     }
     
 
@@ -894,6 +978,7 @@ body {
       }
 
       // Switch player
+      gameState.turnCount++;
       gameState.currentPlayer = gameState.currentPlayer==='white' ? 'black':'white';
       updateTurnIndicator();
       renderBoard();
