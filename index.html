@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WAK — 1.0.5.13</title>
+<title>WAK — 1.0.5.15</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -93,7 +93,7 @@
     border:1px solid rgba(255,255,255,0.06);
   }
   .card.face-up{
-    background: linear-gradient(180deg, #1e3a2f 0%, #284b3b 100%);
+    background: linear-gradient(180deg, #4f8e39 0%, #1e3a2f 100%);
   }
   .card.face-down{
     background:
@@ -108,13 +108,28 @@
     background: linear-gradient(180deg, #334a41 0%, #2a3e34 100%);
     filter: grayscale(.1) brightness(.95);
   }
-  .name{
+  .name {
     font-size: .85rem;
-    text-align:center;
-    padding:6px 4px 0 4px;
-    color:var(--accent-2);
-    min-height: 20%;
+    text-align: center;
+    padding: 6px 4px 0 4px;
+    color: var(--accent-2);
+    height: 20%;          /* force consistent height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;  /* prevent wrapping */
+    overflow: hidden;     /* clip long text */
+    text-overflow: ellipsis;
+    position: relative;
+    z-index: 3;
   }
+  .name.mushroom {
+  font-size: 0.7rem;    /* smaller so "Mushroom Ring" fits */
+  line-height: 1.1;     /* tighter spacing */
+  white-space: nowrap;  /* prevent wrapping to 2 lines */
+  overflow: hidden;     /* if text is too long, hide overflow */
+  text-overflow: ellipsis;
+}
   .token-area{
     flex:1; display:flex; align-items:center; justify-content:center;
     position:relative;
@@ -149,7 +164,7 @@
   .hl-move{ box-shadow: inset 0 0 0 4px rgba(143,211,168,.85); }
   .hl-cap{  box-shadow: inset 0 0 0 4px rgba(229,103,103,.95); }
   .hl-sel{  outline:3px solid var(--gold); outline-offset:-3px; z-index:3; }
-  .hl-cube{ box-shadow: inset 0 0 0 4px rgba(247,215,116,.95); } /* block cube highlight */
+  .hl-cube{ box-shadow: inset 0 0 0 4px rgb(161,199,101); } /* block cube highlight */
   /* Hover polish */
   .card:not(.impassable):hover{ transform: scale(1.03); }
   .card.impassable:hover{ transform: rotate(90deg) scale(1.0); cursor:not-allowed; }
@@ -177,6 +192,7 @@
   .backdrop{
     position:fixed; inset:0; background: rgba(0,0,0,.6);
     display:flex; align-items:center; justify-content:center;
+    z-index: 9999;
   }
   .modal{
     background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
@@ -186,12 +202,33 @@
     text-align:center;
     box-shadow: 0 16px 40px rgba(0,0,0,.45);
   }
+  
+  /* rules-section */
+  .rules-section {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.rules-section h2 {
+  font-weight:700;
+  letter-spacing:.5px;
+}
+.rules-section ul li {
+  margin-bottom:4px;
+}
+.rules-section ul li ul li {
+  margin-bottom:2px;
+}
+
 </style>
 </head>
 <body>
   <div class="wrap">
     <h1>We Are Kings</h1>
-    <div class="sub">Best of three • 4×4 • Forest ruleset</div>
+    <div class="sub">Best of three • 1.0.5.15</div>
 
     <div class="players row">
       <div id="player-white-info" class="panel player">
@@ -221,6 +258,25 @@
       </div>
     </div>
   </div>
+  
+<div class="rules-section panel" style="margin-top:24px; padding:12px;">
+  <h2 style="margin-top:0; margin-bottom:8px;">Rules Reference</h2>
+  <ul style="padding-left:20px; margin:0; line-height:1.5;">
+    <li>Each player starts on a <strong>King Start</strong> card.</li>
+    <li>On your turn, select your token and choose an action:
+      <ul>
+        <li><strong>King Action</strong>: Move 1 space in any direction, then place a block cube.</li>
+        <li><strong>Card Action</strong>: Move according to your card’s movement pattern; captures allowed.</li>
+        <li><strong>Mushroom Teleport</strong>: Jump to any face-up Mushroom Ring (destination becomes impassable).</li>
+      </ul>
+    </li>
+    <li><strong>Captures</strong>: Wound the opponent and place them on an adjacent highlighted space. Immediate recaptures from last capture origin are prohibited.</li>
+    <li>Sliding pieces (Rook, Bishop, Queen) cannot pass through impassable spaces but Knights can jump over impassable spaces.</li>
+    <li>Start cards become Mushroom Rings after moving.</li>
+    <li>The first player to capture twice or flip the last facedown card wins the match.</li>
+    <li>If a player has no legal moves on their turn, they lose.</li>
+  </ul>
+</div>
 
   <!-- Modal -->
   <div id="modal" class="backdrop" style="display:none;">
@@ -240,7 +296,7 @@ const CARD_TYPES = {
   KNIGHT:     { name: 'Knight',        move: 'knight' },
   QUEEN:      { name: 'Queen',         move: 'queen' },
   MUSHROOM:   { name: 'Mushroom Ring', move: 'mushroom' },
-  START_KING: { name: 'King Start',    move: 'king', impassableName: 'Mushroom Ring' },
+  START_KING: { name: 'King Start',    move: 'king_start', impassableName: 'Mushroom Ring' },
 };
 
 /* ===== DOM ===== */
@@ -272,7 +328,7 @@ let gameState = {
   turnAction: null,                 // 'king_block' | 'capture_placement' | null
   capturePlacementData: null,       // { opponentColor, fromR, fromC }
   blockCubePos: null,               // {r,c} location of cube (impassable)
-  lastCaptureOrigin: null,          // {r,c} square the capturing piece left
+  lastCaptureOrigin: null,          // {r,c}  the capturing piece left
   justCaptured: null,               // 'white' | 'black' (the side just captured last turn)
   isGameOver: false,
 
@@ -424,13 +480,16 @@ function renderBoard(){
       cell.dataset.row = r; cell.dataset.col = c;
 
       cell.classList.add(card.isFaceUp ? 'face-up' : 'face-down');
-      if (card.isImpassable && !card.impassableName) cell.classList.add('impassable');
+      if (card.isImpassable) cell.classList.add('impassable');
 
       // Name row
       const nameDiv = document.createElement('div');
       nameDiv.className = 'name';
       let displayName = card.isFaceUp ? card.name : '';
-      if (card.isImpassable && card.impassableName) displayName = card.impassableName;
+      if (card.isImpassable && card.impassableName) {
+        displayName = card.impassableName;
+        nameDiv.classList.add('mushroom');   // 👈 add special class
+      }
       nameDiv.textContent = displayName;
       cell.appendChild(nameDiv);
 
@@ -491,6 +550,11 @@ function onCellClick(r,c){
     return handleInitialPlacement(r,c);
   }
 
+  //First turn only king action
+  if (gameState.turnCount <= 2) {
+    const cell = gameState.board[r][c];
+  }
+
   // Capture relocation phase
   if (gameState.turnAction === 'capture_placement'){
     const key = keyRC(r,c);
@@ -516,10 +580,12 @@ function onCellClick(r,c){
       origin.name = CARD_TYPES.MUSHROOM.name;
       origin.move = 'mushroom';
       origin.isFaceUp = true;
-      origin.isImpassable = true;
-    } else {
-      origin.isImpassable = true;
     }
+      origin.isImpassable = false;
+      
+    // } else {
+    //   origin.isImpassable = false;
+    // }
 
     gameState.capturePlacementData = null;
     gameState.turnAction = null;
@@ -662,7 +728,7 @@ function highlightMushroomMoves(r,c){
     }
   }
   for (const m of moves) gameState.highlights.map.set(keyRC(m.r,m.c), m);
-  setMessage("Mushroom Teleport: jump to any face-up mushroom (then it turns).");
+  setMessage("Mushroom Teleport: jump to any face-up unoccupied mushroom card.");
   renderBoard();
 }
 
@@ -698,7 +764,7 @@ function getPieceMoves(r,c,piece,meColor){
         nr+=dr; nc+=dc;
       }
     } else { // king or knight step
-      if (isValidPosition(nr,nc)){
+      if (isValidPosition(nr,nc) && (!isImpassable(nr,nc))){
         const canJump = (piece==='knight');
         if ((canJump || !isImpassable(nr,nc)) && !isOccupiedByPlayer(nr,nc,meColor)){
           const isCap = isOccupiedByPlayer(nr,nc,opp);
@@ -762,8 +828,8 @@ function handleMove(toR, toC, info){
     if (fromCard.name === CARD_TYPES.START_KING.name){
       fromCard.name = CARD_TYPES.MUSHROOM.name;
       fromCard.move = 'mushroom';
-      fromCard.isFaceUp = true;
-      fromCard.isImpassable = false;
+      fromCard.isFaceUp = true; //TESTING
+      fromCard.isImpassable = false; 
     }
     gameState.actionChosen = true;
     gameState.turnAction = 'king_block';
@@ -789,7 +855,7 @@ function handleMove(toR, toC, info){
 
   if (info.type === 'mushroom_move'){
     // Teleported mushroom becomes impassable (the destination ring)
-    toCard.isImpassable = true;
+    toCard.isImpassable = false; //TESTING - not impassable 1.0.5.15
     gameState.actionChosen = true;
     endTurn();
     return;
@@ -804,7 +870,7 @@ function handleCapture(opponentColor, captureR, captureC, fromR, fromC){
   gameState.lastCaptureOrigin = { r: fromR, c: fromC };
   gameState.justCaptured = opponentColor;
 
-  // Build adjacent placement spots (not the origin square)
+  // Build adjacent placement spots (not the origin )
   const valid=[];
   for (let dr=-1; dr<=1; dr++){
     for (let dc=-1; dc<=1; dc++){
