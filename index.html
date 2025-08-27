@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WAK — 1.0.5.17</title>
+<title>WAK — 1.0.5.18</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -148,6 +148,7 @@
     font-weight:800; font-size:1.4rem;
     border:3px solid rgba(0,0,0,.65);
     box-shadow: 0 6px 16px rgba(0,0,0,.35);
+    transition: transform .15s ease, box-shadow .15s ease;
     position:absolute;
     z-index:2;
   }
@@ -193,6 +194,12 @@
     padding:10px 12px; min-height:24px; color:var(--accent-2);
   }
 
+  .btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
   /* Modal */
   .backdrop{
     position:fixed; inset:0; background: rgba(0,0,0,.6);
@@ -237,7 +244,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings 1.0.5.17</h1>
+    <h1>We Are Kings 1.0.5.18</h1>
     <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three wins game</div>
 
     <!-- Player Info -->
@@ -357,6 +364,26 @@ let gameState = {
   }
 };
 
+/* ===== Token select ===== */
+function makeToken(color){
+  const d = document.createElement('div');
+  d.className = `token ${color}`;
+  d.textContent = gameState.players[color].token;
+
+  if (gameState.players[color].isBloodied) d.classList.add('bloodied');
+
+  const sel = gameState.selectedTokenPos;
+  if (sel && sel.r === gameState.players[color].pos.r && sel.c === gameState.players[color].pos.c){
+    d.style.transform = "scale(1.05)";
+    d.style.boxShadow = "0 0 12px var(--gold), 0 6px 16px rgba(0,0,0,0.35)";
+    d.style.zIndex = 5;
+  } else {
+    d.style.transform = "scale(1.0)";
+  }
+
+  return d;
+}
+
 /* ===== History (Undo) ===== */
 let history = [];
 function saveState(){
@@ -415,6 +442,14 @@ function updateTurnIndicator(){
   const bi = document.getElementById('player-black-info');
   wi.classList.remove('turn'); bi.classList.remove('turn');
   (gameState.currentPlayer==='white' ? wi : bi).classList.add('turn');
+}
+function autoSelectToken(){
+  const me = gameState.players[gameState.currentPlayer];
+  if (!me.pos) return;
+  gameState.selectedTokenPos = { ...me.pos };
+  gameState.highlights.selection = { ...me.pos };
+  showChoices(me.pos.r, me.pos.c);
+  renderBoard();
 }
 
 /* ===== Setup & Match Flow ===== */
@@ -551,13 +586,13 @@ function renderBoard(){
   updateTurnIndicator();
 }
 
-function makeToken(color){
-  const d = document.createElement('div');
-  d.className = `token ${color}`;
-  d.textContent = gameState.players[color].token;
-  if (gameState.players[color].isBloodied) d.classList.add('bloodied');
-  return d;
-}
+// function makeToken(color){
+//   const d = document.createElement('div');
+//   d.className = `token ${color}`;
+//   d.textContent = gameState.players[color].token;
+//   if (gameState.players[color].isBloodied) d.classList.add('bloodied');
+//   return d;
+// }
 
 /* ===== Click Flow ===== */
 function onCellClick(r,c){
@@ -690,21 +725,64 @@ function handleInitialPlacement(r,c){
 }
 
 /* ===== Action Choice UI ===== */
-function showChoices(r,c){
+function showChoices(r, c){
   choiceBar.classList.add('show');
 
-  kingBtn.onclick = () => {
-    if (gameState.actionChosen) return;
-    highlightKingMoves(r,c);
-  };
-  cardBtn.onclick = () => {
-    if (gameState.actionChosen) return;
-    highlightCardMoves(r,c);
-  };
-  mushBtn.onclick = () => {
-    if (gameState.actionChosen) return;
-    highlightMushroomMoves(r,c);
-  };
+  const meColor = gameState.currentPlayer;
+  const cell = gameState.board[r][c];
+
+  // Helper to enable/disable button
+  function toggleButton(btn, hasMoves, onClick){
+    if(hasMoves){
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+      btn.onclick = onClick;
+    } else {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+      btn.onclick = null;
+    }
+  }
+
+  // 1️⃣ King moves
+  let kingMoves = [];
+  for (let dr=-1; dr<=1; dr++){
+    for (let dc=-1; dc<=1; dc++){
+      if (dr===0 && dc===0) continue;
+      const nr=r+dr, nc=c+dc;
+      if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
+        kingMoves.push({r:nr,c:nc});
+      }
+    }
+  }
+  toggleButton(kingBtn, kingMoves.length, () => highlightKingMoves(r,c));
+
+  // 2️⃣ Card moves
+  const pieceMoves = getPieceMoves(r,c, cell.move, meColor);
+  toggleButton(cardBtn, pieceMoves.length, () => highlightCardMoves(r,c));
+
+  // 3️⃣ Mushroom moves
+  const mushroomMoves = [];
+  for (let row=0; row<4; row++){
+    for (let col=0; col<4; col++){
+      const t = gameState.board[row][col];
+      if (row===r && col===c) continue;
+      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !hasBlockCube(row,col) && !isOccupied(row,col)){
+        mushroomMoves.push({r:row,c:col});
+      }
+    }
+  }
+  toggleButton(mushBtn, mushroomMoves.length, () => highlightMushroomMoves(r,c));
+
+  // Optional: message if no moves available
+  if (!kingMoves.length && !pieceMoves.length && !mushroomMoves.length){
+    setMessage("No legal moves available for this token.");
+    const winner = gameState.currentPlayer==='white' ? 'black':'white';
+    endGame(winner, `${cap(gameState.currentPlayer)} has no legal moves.`);
+    return;
+  } else {
+    setMessage("Select a move type:");
+  }
 }
 
 /* ===== Move Generation ===== */
@@ -946,6 +1024,8 @@ function endTurn(){
 
   updateTurnIndicator();
   renderBoard();
+
+  autoSelectToken();
 
   // Stalemate: no legal moves for side to play
   if (!hasAnyLegalMoves(gameState.currentPlayer)){
