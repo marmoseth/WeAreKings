@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WAK — 1.0.5.15</title>
+<title>WAK — 1.0.5.17</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -19,7 +19,7 @@
     --muted:#a8c7b6;
   }
 
-  /* CSS-only "forest" background */
+  /* "forest" background */
   body{
     margin:0;
     color:var(--ink);
@@ -38,8 +38,9 @@
 
   .wrap{
     max-width: 980px;
-    margin: 24px auto;
+    margin: 0 auto;
     padding: 16px;
+    align-items: center;
   }
 
   h1{
@@ -62,7 +63,7 @@
 
   /* Player info */
   .players{
-    display:flex; gap:12px; width:100%;
+    display:flex; justify-content:center; gap: 12px; width:min(88vw, 520px); margin: 20px auto;
   }
   .player{
     flex:1; padding:12px; text-align:center;
@@ -80,6 +81,10 @@
     grid-template-columns: repeat(4, 1fr);
     gap:6px;
     padding:6px;
+    /* 1. Set a specific width */
+    width: min(88vw, 520px); /* don't know if this works */
+    /* 2. Set margins to center it */
+    margin: 24px auto 0; /*don't know if this works */
   }
 
   .card{
@@ -171,7 +176,7 @@
 
   /* Controls & messages */
   .controls{
-    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    display:flex; flex-wrap:wrap; align-items:center; margin-top: auto; justify-content: center; gap:8px;
   }
   .btn{
     background:#244d3b; border:1px solid rgba(255,255,255,0.08);
@@ -204,13 +209,18 @@
   }
   
   /* rules-section */
-  .rules-section {
+ .rules-section {
   background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   color: var(--ink);
   font-size: 0.9rem;
+  box-sizing: border-box;
+  /* 1. Set a specific width */
+  width: min(88vw, 520px);
+  /* 2. Set margins to center it */
+  margin: 24px auto 0;
 }
 .rules-section h2 {
   font-weight:700;
@@ -227,9 +237,10 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings</h1>
-    <div class="sub">Best of three • 1.0.5.15</div>
+    <h1>We Are Kings 1.0.5.17</h1>
+    <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three wins game</div>
 
+    <!-- Player Info -->
     <div class="players row">
       <div id="player-white-info" class="panel player">
         <div style="font-weight:700">Player White</div>
@@ -241,24 +252,31 @@
         <div>Captures: <span id="black-captures">0</span>/2</div>
         <div>Matches Won: <span id="black-matches">0</span></div>
       </div>
+      </div>
+
+    <!-- Game Board -->
+    <div class="board-wrap row" style="margin-top:12px;">
+        <div class="panel board" id="game-board"></div>
+        </div>
+
+              <!-- Controls-->
+    <div class="panel" style="max-width: 520px; margin: 24px auto 0; padding: 10px; flex-direction:column; gap:10px;">
+    <div class="message" id="message-board"></div>
+    <div class="controls">
+    <div id="move-choice" class="choice">
+        <button id="king-move-btn" class="btn">King Action</button>
+        <button id="card-move-btn" class="btn">Card Action</button>
+        <button id="mushroom-move-btn" class="btn">Mushroom Teleport</button>
+    </div>
+    <button id="undo-btn" class="btn">Undo</button>
+        </div>
+  </div>
     </div>
 
-    <div class="board-wrap row" style="margin-top:12px;">
-      <div class="panel board" id="game-board"></div>
-      <div class="panel" style="flex:1; min-width:260px; padding:12px; display:flex; flex-direction:column; gap:10px;">
-        <div class="message" id="message-board"></div>
-        <div class="controls">
-          <button id="undo-btn" class="btn">Undo</button>
-        </div>
-        <div id="move-choice" class="choice">
-          <button id="king-move-btn" class="btn">King Action</button>
-          <button id="card-move-btn" class="btn">Card Action</button>
-          <button id="mushroom-move-btn" class="btn">Mushroom Teleport</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
+
+
+
+<!-- Rules Reference -->  
 <div class="rules-section panel" style="margin-top:24px; padding:12px;">
   <h2 style="margin-top:0; margin-bottom:8px;">Rules Reference</h2>
   <ul style="padding-left:20px; margin:0; line-height:1.5;">
@@ -551,7 +569,7 @@ function onCellClick(r,c){
   }
 
   //First turn only king action
-  if (gameState.turnCount <= 2) {
+  if (gameState.turnCount === 2) {
     const cell = gameState.board[r][c];
   }
 
@@ -581,7 +599,7 @@ function onCellClick(r,c){
       origin.move = 'mushroom';
       origin.isFaceUp = true;
     }
-      origin.isImpassable = false;
+      origin.isImpassable = true;
       
     // } else {
     //   origin.isImpassable = false;
@@ -639,6 +657,11 @@ function onCellClick(r,c){
   clearHighlights();
   choiceBar.classList.remove('show');
   renderBoard();
+}
+
+//block cube helper
+function hasBlockCube(r,c){
+    return gameState.blockCubePos && gameState.blockCubePos.r === r && gameState.blockCubePos.c === c;
 }
 
 function handleInitialPlacement(r,c){
@@ -722,7 +745,7 @@ function highlightMushroomMoves(r,c){
     for (let col=0; col<4; col++){
       const t = gameState.board[row][col];
       if (row===r && col===c) continue;
-      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !isOccupied(row,col)){
+      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !hasBlockCube(row,col) && !isOccupied(row,col)){
         moves.push({ r:row, c:col, type:'mushroom_move', isCapture:false });
       }
     }
@@ -828,8 +851,8 @@ function handleMove(toR, toC, info){
     if (fromCard.name === CARD_TYPES.START_KING.name){
       fromCard.name = CARD_TYPES.MUSHROOM.name;
       fromCard.move = 'mushroom';
-      fromCard.isFaceUp = true; //TESTING
-      fromCard.isImpassable = false; 
+      fromCard.isFaceUp = true; 
+      fromCard.isImpassable = false; //Use true if you want impassable right away <lever>
     }
     gameState.actionChosen = true;
     gameState.turnAction = 'king_block';
@@ -855,7 +878,7 @@ function handleMove(toR, toC, info){
 
   if (info.type === 'mushroom_move'){
     // Teleported mushroom becomes impassable (the destination ring)
-    toCard.isImpassable = false; //TESTING - not impassable 1.0.5.15
+    toCard.isImpassable = false;
     gameState.actionChosen = true;
     endTurn();
     return;
