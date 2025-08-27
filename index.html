@@ -946,13 +946,10 @@ function getPieceMoves(r, c, piece, meColor) {
         nr += dr; nc += dc;
       }
     } else {
-      if (isValidPosition(nr, nc)) {
-        const canJump = (piece === 'knight');
-        if ((canJump || !isImpassable(nr, nc)) && !isOccupiedByPlayer(nr, nc, meColor)) {
-          const isCap = isOccupiedByPlayer(nr, nc, opp);
-          if (!(isCap && wasJustCaptured)) {
-            moves.push({ r: nr, c: nc, isCapture: isCap });
-          }
+      if (isValidMove(nr, nc) && !isOccupiedByPlayer(nr, nc, meColor)) {
+        const isCap = isOccupiedByPlayer(nr, nc, opp);
+        if (!(isCap && wasJustCaptured)) {
+          moves.push({ r: nr, c: nc, isCapture: isCap });
         }
       }
     }
