@@ -19,22 +19,28 @@
     --muted:#a8c7b6;
   }
 
-  /* "forest" background */
-  body{
-    margin:0;
-    color:var(--ink);
-    background:
-      /* fog layer */
-      radial-gradient(1200px 600px at 50% 120%, rgba(255,255,255,0.04), transparent 60%),
-      /* canopy gradients */
-      linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 45%, var(--bg1) 100%),
-      /* trunks: repeated narrow dark stripes */
-      repeating-linear-gradient(90deg,
-        rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 2px,
-        transparent 2px, transparent 18px);
-    min-height:100vh;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  }
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    /* Mist layer for depth */
+    linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.02) 50%, transparent 80%),
+    /* Foliage: soft, irregular treetop blobs */
+    radial-gradient(ellipse 40% 20% at 20% 30%, rgba(29,77,53,0.3) 10%, transparent 40%),
+    radial-gradient(ellipse 30% 15% at 60% 20%, rgba(29,77,53,0.25) 10%, transparent 40%),
+    radial-gradient(ellipse 35% 18% at 80% 35%, rgba(29,77,53,0.2) 10%, transparent 40%),
+    /* Tree trunks: varied thickness and spacing */
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 3px,
+      transparent 3px, transparent 25px),
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 2px,
+      transparent 2px, transparent 40px),
+    /* Base canopy gradient */
+    linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 45%, var(--bg1) 100%);
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
 
   .wrap{
     max-width: 980px;
@@ -138,20 +144,45 @@
   }
 
   /* Tokens & cube */
-  .token{
-    width:66%; height:66%;
-    border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:1.4rem;
-    border:3px solid rgba(0,0,0,.65);
-    box-shadow: 0 6px 16px rgba(0,0,0,.35);
-    transition: transform .15s ease, box-shadow .15s ease;
-    position:absolute;
-    z-index:2;
-  }
-  .white{ background:#f0f6f3; color:#1f2d28; }
-  .black{ background:#22352c; color:#e8f3ee; border-color: rgba(255,255,255,.75); }
-  .bloodied{ box-shadow: 0 0 12px var(--warn), inset 0 0 6px var(--warn); border-color: var(--warn); }
+.token {
+  width: 48px; /* Larger size for tokens */
+  height: 48px; /* Larger size for tokens */
+  aspect-ratio: 1/1; /* Enforce square shape */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem; /* Larger for bigger king emoji */
+  line-height: 1; /* Prevent vertical offset */
+  font-weight: 400; /* Normal weight for emoji */
+  border-radius: 50%; /* Circular shape */
+  transition: transform .15s ease, box-shadow .15s ease;
+  position: absolute;
+  z-index: 2;
+}
+.white {
+  background: #22352c; /* Dark background for white player */
+  color: #f0f6f3; /* Light font for white king emoji */
+  border: 2px solid #f0f6f3; /* White border */
+  box-shadow: 0 0 8px rgba(240,246,243,0.6), 0 4px 12px rgba(0,0,0,0.3); /* White glow + default shadow */
+}
+.black {
+  background: #f0f6f3; /* Light background for black player */
+  color: #22352c; /* Dark font for black king emoji */
+  border: 2px solid #22352c; /* Black border */
+  box-shadow: 0 0 8px rgba(34,53,44,0.6), 0 4px 12px rgba(0,0,0,0.3); /* Black shadow + default shadow */
+}
+.bloodied {
+  box-shadow: 0 0 10px var(--warn), inset 0 0 5px var(--warn); /* Red glow for bloodied */
+  border-color: var(--warn); /* Red border for bloodied */
+  animation: pulse 1s ease-in-out infinite; /* Pulse when bloodied */
+}
+
+/* Animation for selected or bloodied tokens */
+@keyframes pulse {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(0.95); }
+}
 
   .cube{
     width:50%; height:50%;
@@ -244,7 +275,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings|1.0.5.21</h1>
+    <h1>We Are Kings | 1.0.5.21</h1>
     <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three wins game</div>
 
     <div class="players row">
@@ -348,7 +379,8 @@ let gameState = {}; // Will be initialized in startNewGame
 function makeToken(color) {
   const d = document.createElement('div');
   d.className = `token ${color}`;
-  d.textContent = gameState.players[color].token;
+  d.textContent = color === 'white' ? '♔' : '♚'; // Use chess king emojis
+  d.setAttribute('aria-label', `${cap(color)} King`); // Accessibility
 
   if (gameState.players[color].isBloodied) d.classList.add('bloodied');
 
@@ -356,9 +388,11 @@ function makeToken(color) {
   if (sel && sel.r === gameState.players[color].pos.r && sel.c === gameState.players[color].pos.c) {
     d.style.transform = "scale(1.05)";
     d.style.boxShadow = "0 0 12px var(--gold), 0 6px 16px rgba(0,0,0,0.35)";
+    d.style.animation = "pulse 1s ease-in-out infinite"; // Pulse when selected
     d.style.zIndex = 5;
   } else {
     d.style.transform = "scale(1.0)";
+    d.style.animation = ""; // Remove animation when not selected
   }
 
   return d;
@@ -447,8 +481,8 @@ function startNewGame() {
   gameState = {
     board: [],
     players: {
-      white: { token: 'W', captures: 0, matches: 0, isBloodied: false, pos: null },
-      black: { token: 'B', captures: 0, matches: 0, isBloodied: false, pos: null },
+      white: { captures: 0, matches: 0, isBloodied: false, pos: null },
+      black: { captures: 0, matches: 0, isBloodied: false, pos: null },
     },
     currentPlayer: 'white',
     turnCount: 0,
@@ -463,7 +497,7 @@ function startNewGame() {
     aiDifficulty: 'medium',
     aiThinking: false,
     highlights: { map: {}, capSpots: [], selection: null },
-    debug: false // For conditional logging
+    debug: false
   };
   history = [];
   showModal("Begin Game", "White goes first. Best of three matches wins the game.", "Start", startNewMatch);
