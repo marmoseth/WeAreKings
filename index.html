@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WAK — 1.0.5.19</title>
+<title> 1.0.5.20</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -75,16 +75,13 @@
     display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;
   }
   .board{
-    width: min(88vw, 520px);
     aspect-ratio:1/1;
     display:grid;
     grid-template-columns: repeat(4, 1fr);
     gap:6px;
     padding:6px;
-    /* 1. Set a specific width */
-    width: min(88vw, 520px); /* don't know if this works */
-    /* 2. Set margins to center it */
-    margin: 24px auto 0; /*don't know if this works */
+    width: min(88vw, 520px);
+    margin: 24px auto 0;
   }
 
   .card{
@@ -129,12 +126,12 @@
     z-index: 3;
   }
   .name.mushroom {
-  font-size: 0.7rem;    /* smaller so "Mushroom Ring" fits */
-  line-height: 1.1;     /* tighter spacing */
-  white-space: nowrap;  /* prevent wrapping to 2 lines */
-  overflow: hidden;     /* if text is too long, hide overflow */
-  text-overflow: ellipsis;
-}
+    font-size: 0.7rem;    /* smaller so "Mushroom Ring" fits */
+    line-height: 1.1;     /* tighter spacing */
+    white-space: normal;  /* allow wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .token-area{
     flex:1; display:flex; align-items:center; justify-content:center;
     position:relative;
@@ -176,6 +173,13 @@
   .card.impassable:hover{ transform: rotate(90deg) scale(1.0); cursor:not-allowed; }
 
   /* Controls & messages */
+  .controls-panel {
+    max-width: 520px;
+    margin: 24px auto 0;
+    padding: 10px;
+    flex-direction: column;
+    gap: 10px;
+  }
   .controls{
     display:flex; flex-wrap:wrap; align-items:center; margin-top: auto; justify-content: center; gap:8px;
   }
@@ -195,10 +199,9 @@
   }
 
   .btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
   /* Modal */
   .backdrop{
@@ -224,9 +227,7 @@
   color: var(--ink);
   font-size: 0.9rem;
   box-sizing: border-box;
-  /* 1. Set a specific width */
   width: min(88vw, 520px);
-  /* 2. Set margins to center it */
   margin: 24px auto 0;
 }
 .rules-section h2 {
@@ -239,15 +240,13 @@
 .rules-section ul li ul li {
   margin-bottom:2px;
 }
-
 </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings 1.0.5.19</h1>
+    <h1>We Are Kings|1.0.5.20</h1>
     <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three wins game</div>
 
-    <!-- Player Info -->
     <div class="players row">
       <div id="player-white-info" class="panel player">
         <div style="font-weight:700">Player White</div>
@@ -259,60 +258,62 @@
         <div>Captures: <span id="black-captures">0</span>/2</div>
         <div>Matches Won: <span id="black-matches">0</span></div>
       </div>
-      </div>
+    </div>
 
-    <!-- Game Board -->
     <div class="board-wrap row" style="margin-top:12px;">
-        <div class="panel board" id="game-board"></div>
-        </div>
-
-              <!-- Controls-->
-    <div class="panel" style="max-width: 520px; margin: 24px auto 0; padding: 10px; flex-direction:column; gap:10px;">
-    <div class="message" id="message-board"></div>
-    <div class="controls">
-    <div id="move-choice" class="choice">
-        <button id="king-move-btn" class="btn">King Action</button>
-        <button id="card-move-btn" class="btn">Card Action</button>
-        <button id="mushroom-move-btn" class="btn">Mushroom Teleport</button>
+      <div class="panel board" id="game-board"></div>
     </div>
-    <button id="undo-btn" class="btn">Undo</button>
+
+    <div class="panel controls-panel">
+      <div class="message" id="message-board"></div>
+      <div class="controls">
+        <div id="move-choice" class="choice">
+            <button id="king-move-btn" class="btn" aria-label="Perform King Action">King Action</button>
+            <button id="card-move-btn" class="btn" aria-label="Perform Card Action">Card Action</button>
+            <button id="mushroom-move-btn" class="btn" aria-label="Perform Mushroom Teleport">Mushroom Teleport</button>
         </div>
+        <button id="undo-btn" class="btn" aria-label="Undo Last Move">Undo</button>
+        <button id="ai-toggle-btn" class="btn" aria-label="Toggle AI Opponent">Play vs AI: Off</button>
+      </div>
+      <select id="ai-difficulty" class="btn" style="display:none;" aria-label="Select AI Difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+      </select>
+    </div>
   </div>
-    </div>
 
+  <div class="rules-section panel" style="margin-top:24px; padding:12px;">
+    <h2 style="margin-top:0; margin-bottom:8px;">Rules Reference</h2>
+    <ul style="padding-left:20px; margin:0; line-height:1.5;">
+      <li>Each player starts on a <strong>King Start</strong> card.</li>
+      <li>On your turn, select your token and choose an action:
+        <ul>
+          <li><strong>King Action</strong>: Move 1 space in any direction, then place a block cube.</li>
+          <li><strong>Card Action</strong>: Move according to your card’s movement pattern; captures allowed.</li>
+          <li><strong>Mushroom Teleport</strong>: Jump to any face-up Mushroom Ring (destination becomes impassable).</li>
+        </ul>
+      </li>
+      <li><strong>Captures</strong>: Wound the opponent and place them on an adjacent highlighted space. Immediate recaptures from last capture origin are prohibited.</li>
+      <li>Sliding pieces (Rook, Bishop, Queen) cannot pass through impassable spaces but Knights can jump over impassable spaces.</li>
+      <li>Start cards become Mushroom Rings after moving.</li>
+      <li>The first player to capture twice or flip the last facedown card wins the match.</li>
+      <li>If a player has no legal moves on their turn, they lose.</li>
+    </ul>
+  </div>
 
-
-
-<!-- Rules Reference -->  
-<div class="rules-section panel" style="margin-top:24px; padding:12px;">
-  <h2 style="margin-top:0; margin-bottom:8px;">Rules Reference</h2>
-  <ul style="padding-left:20px; margin:0; line-height:1.5;">
-    <li>Each player starts on a <strong>King Start</strong> card.</li>
-    <li>On your turn, select your token and choose an action:
-      <ul>
-        <li><strong>King Action</strong>: Move 1 space in any direction, then place a block cube.</li>
-        <li><strong>Card Action</strong>: Move according to your card’s movement pattern; captures allowed.</li>
-        <li><strong>Mushroom Teleport</strong>: Jump to any face-up Mushroom Ring (destination becomes impassable).</li>
-      </ul>
-    </li>
-    <li><strong>Captures</strong>: Wound the opponent and place them on an adjacent highlighted space. Immediate recaptures from last capture origin are prohibited.</li>
-    <li>Sliding pieces (Rook, Bishop, Queen) cannot pass through impassable spaces but Knights can jump over impassable spaces.</li>
-    <li>Start cards become Mushroom Rings after moving.</li>
-    <li>The first player to capture twice or flip the last facedown card wins the match.</li>
-    <li>If a player has no legal moves on their turn, they lose.</li>
-  </ul>
-</div>
-
-  <!-- Modal -->
   <div id="modal" class="backdrop" style="display:none;">
     <div class="modal">
       <h2 id="modal-title" style="margin:0 0 8px 0;">Begin Match</h2>
       <p id="modal-text" style="margin:0 0 14px 0;">White goes first.</p>
-      <button id="modal-button" class="btn">Start</button>
+      <button id="modal-button" class="btn" aria-label="Start Game">Start</button>
     </div>
   </div>
 
 <script>
+/* ===== Rows & Cols ===== */
+const ROWS = 4;
+const COLS = 4;
 /* ===== Card Types ===== */
 const CARD_TYPES = {
   KING:       { name: 'King',          move: 'king' },
@@ -332,6 +333,8 @@ const choiceBar    = document.getElementById('move-choice');
 const kingBtn      = document.getElementById('king-move-btn');
 const cardBtn      = document.getElementById('card-move-btn');
 const mushBtn      = document.getElementById('mushroom-move-btn');
+const aiToggleBtn  = document.getElementById('ai-toggle-btn');
+const aiDifficulty = document.getElementById('ai-difficulty');
 
 const modal        = document.getElementById('modal');
 const modalTitle   = document.getElementById('modal-title');
@@ -339,33 +342,10 @@ const modalText    = document.getElementById('modal-text');
 const modalButton  = document.getElementById('modal-button');
 
 /* ===== Game State ===== */
-let gameState = {
-  board: [],
-  players: {
-    white: { token:'W', captures:0, matches:0, isBloodied:false, pos:null },
-    black: { token:'B', captures:0, matches:0, isBloodied:false, pos:null },
-  },
-  currentPlayer: 'white',
-  turnCount: 0,
-  selectedTokenPos: null,
-
-  actionChosen: false,              // ✅ only one action per turn
-  turnAction: null,                 // 'king_block' | 'capture_placement' | null
-  capturePlacementData: null,       // { opponentColor, fromR, fromC }
-  blockCubePos: null,               // {r,c} location of cube (impassable)
-  lastCaptureOrigin: null,          // {r,c}  the capturing piece left
-  justCaptured: null,               // 'white' | 'black' (the side just captured last turn)
-  isGameOver: false,
-
-  highlights: {
-    map: new Map(),                 // "r,c" -> {type:'king_move'|'action_move'|'mushroom_move', isCapture:boolean}
-    capSpots: new Set(),            // "r,c" valid placement after capture
-    selection: null,                // {r,c}
-  }
-};
+let gameState = {}; // Will be initialized in startNewGame
 
 /* ===== Token select ===== */
-function makeToken(color){
+function makeToken(color) {
   const d = document.createElement('div');
   d.className = `token ${color}`;
   d.textContent = gameState.players[color].token;
@@ -373,7 +353,7 @@ function makeToken(color){
   if (gameState.players[color].isBloodied) d.classList.add('bloodied');
 
   const sel = gameState.selectedTokenPos;
-  if (sel && sel.r === gameState.players[color].pos.r && sel.c === gameState.players[color].pos.c){
+  if (sel && sel.r === gameState.players[color].pos.r && sel.c === gameState.players[color].pos.c) {
     d.style.transform = "scale(1.05)";
     d.style.boxShadow = "0 0 12px var(--gold), 0 6px 16px rgba(0,0,0,0.35)";
     d.style.zIndex = 5;
@@ -386,102 +366,138 @@ function makeToken(color){
 
 /* ===== History (Undo) ===== */
 let history = [];
-function saveState(){
+function saveState() {
   const copy = JSON.parse(JSON.stringify(gameState));
-  copy.highlights.capSpots = Array.from(gameState.highlights.capSpots);
-  copy.highlights.map = Array.from(gameState.highlights.map.entries());
-  history.push(JSON.stringify(copy));
+  history.push(copy);
+  undoBtn.disabled = false;
 }
-function undoMove(){
-  if (!history.length) return;
-  const saved = JSON.parse(history.pop());
-  saved.highlights.map = new Map(saved.highlights.map);
-  saved.highlights.capSpots = new Set(saved.highlights.capSpots);
-  gameState = saved;
+function undoMove() {
+  if (history.length <= 1) return; // Can't undo past the start of the turn
+  history.pop(); // Remove current state
+  gameState = JSON.parse(JSON.stringify(history[history.length - 1])); // Load previous
   renderBoard();
-  setMessage("Undone.");
+  setMessage("Undone. Your turn.");
+  autoSelectToken();
 }
 
 /* ===== Helpers ===== */
-const keyRC = (r,c)=>`${r},${c}`;
-const cap = s => s[0].toUpperCase()+s.slice(1);
+const keyRC = (r, c) => `${r},${c}`;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const setMessage = txt => messageBoard.textContent = txt;
 
-function isValidPosition(r,c){ return r>=0 && r<4 && c>=0 && c<4; }
-function isOccupiedByPlayer(r,c,color){
+function isValidPosition(r, c) { return r >= 0 && r < ROWS && c >= 0 && c < COLS; }
+function isOccupiedByPlayer(r, c, color) {
   const p = gameState.players[color].pos;
-  return p && p.r===r && p.c===c;
+  return p && p.r === r && p.c === c;
 }
-function isOccupied(r,c){ return isOccupiedByPlayer(r,c,'white') || isOccupiedByPlayer(r,c,'black'); }
-function isImpassable(r,c){
+function isOccupied(r, c) { return isOccupiedByPlayer(r, c, 'white') || isOccupiedByPlayer(r, c, 'black'); }
+function isImpassable(r, c) {
   const card = gameState.board[r][c];
   if (card.isImpassable) return true;
-  if (gameState.blockCubePos && gameState.blockCubePos.r===r && gameState.blockCubePos.c===c) return true;
+  if (gameState.blockCubePos && gameState.blockCubePos.r === r && gameState.blockCubePos.c === c) return true;
   return false;
 }
-function isValidMove(r,c){ return isValidPosition(r,c) && !isImpassable(r,c); }
+function isValidMove(r, c) { return isValidPosition(r, c) && !isImpassable(r, c); }
 
-function countFaceDown(){
-  let n=0;
-  for (let r=0;r<4;r++) for (let c=0;c<4;c++) if (!gameState.board[r][c].isFaceUp) n++;
-  return n;
+function countFaceDown() {
+  return gameState.board.flat().filter(c => !c.isFaceUp).length;
 }
-function clearHighlights(){
-  gameState.highlights.map.clear();
-  gameState.highlights.capSpots.clear();
+function clearHighlights() {
+  gameState.highlights.map = {};
+  gameState.highlights.capSpots = [];
   gameState.highlights.selection = null;
 }
-function updatePlayerInfo(){
+function updatePlayerInfo() {
   document.getElementById('white-captures').textContent = gameState.players.white.captures;
   document.getElementById('black-captures').textContent = gameState.players.black.captures;
-  document.getElementById('white-matches').textContent  = gameState.players.white.matches;
-  document.getElementById('black-matches').textContent  = gameState.players.black.matches;
+  document.getElementById('white-matches').textContent = gameState.players.white.matches;
+  document.getElementById('black-matches').textContent = gameState.players.black.matches;
 }
-function updateTurnIndicator(){
+function updateTurnIndicator() {
   const wi = document.getElementById('player-white-info');
   const bi = document.getElementById('player-black-info');
   wi.classList.remove('turn'); bi.classList.remove('turn');
-  (gameState.currentPlayer==='white' ? wi : bi).classList.add('turn');
+  if (!gameState.isGameOver) {
+    (gameState.currentPlayer === 'white' ? wi : bi).classList.add('turn');
+  }
 }
-function autoSelectToken(){
+function autoSelectToken() {
   const me = gameState.players[gameState.currentPlayer];
   if (!me.pos) return;
-  gameState.selectedTokenPos = { ...me.pos };
-  gameState.highlights.selection = { ...me.pos };
-  showChoices(me.pos.r, me.pos.c);
-  renderBoard();
+  onCellClick(me.pos.r, me.pos.c);
 }
 
 /* ===== Setup & Match Flow ===== */
-function init(){
-  modal.style.display='flex';
-  modalTitle.textContent = "Begin Match";
-  modalText.textContent  = "White goes first.";
-  modalButton.textContent = "Start";
-  modalButton.onclick = () => { modal.style.display='none'; startNewMatch(); };
+function init() {
+  undoBtn.onclick = undoMove;
+  aiToggleBtn.onclick = toggleAI;
+  aiDifficulty.onchange = (e) => gameState.aiDifficulty = e.target.value;
+
+  // Add keyboard support for accessibility
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && gameState.selectedTokenPos) {
+      showChoices(gameState.selectedTokenPos.r, gameState.selectedTokenPos.c);
+    }
+  });
+
+  startNewGame();
 }
 
-function startNewMatch(){
+function startNewGame() {
+  gameState = {
+    board: [],
+    players: {
+      white: { token: 'W', captures: 0, matches: 0, isBloodied: false, pos: null },
+      black: { token: 'B', captures: 0, matches: 0, isBloodied: false, pos: null },
+    },
+    currentPlayer: 'white',
+    turnCount: 0,
+    selectedTokenPos: null,
+    turnAction: null,
+    capturePlacementData: null,
+    blockCubePos: null,
+    lastCaptureOrigin: null,
+    justCaptured: null,
+    isGameOver: true,
+    aiEnabled: false,
+    aiDifficulty: 'medium',
+    aiThinking: false,
+    highlights: { map: {}, capSpots: [], selection: null },
+    debug: false // For conditional logging
+  };
+  showModal("Begin Game", "White goes first.", "Start", startNewMatch);
+}
+
+function startNewMatch(winner = null) {
+  if (winner) {
+    gameState.players[winner].matches++;
+  }
+
+  // Reset match-specific state
   gameState.isGameOver = false;
-  for (const side of ['white','black']){
+  gameState.board = [];
+  for (const side of ['white', 'black']) {
     const p = gameState.players[side];
-    p.captures=0; p.isBloodied=false; p.pos=null;
+    p.captures = 0; p.isBloodied = false; p.pos = null;
   }
   gameState.blockCubePos = null;
   gameState.selectedTokenPos = null;
-  gameState.actionChosen = false;
   gameState.turnAction = null;
   gameState.capturePlacementData = null;
   clearHighlights();
   setupBoard();
-  renderBoard();
+  
   gameState.currentPlayer = 'white';
-  updateTurnIndicator();
+  gameState.turnCount = 0;
+  
   setMessage(`${cap(gameState.currentPlayer)}, place your token on a 'King Start' card.`);
-  history = []; // reset undo history at new match start
+  history = [JSON.parse(JSON.stringify(gameState))];
+  undoBtn.disabled = true;
+
+  renderBoard();
 }
 
-function setupBoard(){
+function setupBoard() {
   const deck = [
     ...Array(4).fill(CARD_TYPES.KING),
     ...Array(4).fill(CARD_TYPES.ROOK),
@@ -489,33 +505,37 @@ function setupBoard(){
     ...Array(2).fill(CARD_TYPES.KNIGHT),
     ...Array(2).fill(CARD_TYPES.QUEEN),
   ];
-  // shuffle
-  for (let i=deck.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
+  if (deck.length < ROWS * COLS - 2) {
+    if (gameState.debug) console.error("Insufficient cards in deck!");
+    return;
+  }
+  // Shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
-  const grid = Array(16).fill(null);
-  grid[0]  = CARD_TYPES.START_KING;
-  grid[15] = CARD_TYPES.START_KING;
+  const grid = Array(ROWS * COLS).fill(null);
+  grid[0] = CARD_TYPES.START_KING;
+  grid[ROWS * COLS - 1] = CARD_TYPES.START_KING;
 
-  let di=0;
-  for (let i=0;i<16;i++) if (!grid[i]) grid[i] = deck[di++];
+  let di = 0;
+  for (let i = 0; i < 16; i++) if (!grid[i]) grid[i] = deck[di++];
 
   gameState.board = [];
-  for (let r=0;r<4;r++){
-    gameState.board[r]=[];
-    for (let c=0;c<4;c++){
-      const card = grid[r*4+c];
+  for (let r = 0; r < ROWS; r++) {
+    gameState.board[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      const card = grid[r * COLS + c];
       gameState.board[r][c] = {
         ...card,
-        isFaceUp: card.name === CARD_TYPES.START_KING.name ? true : false,
+        isFaceUp: card.name === CARD_TYPES.START_KING.name,
         isImpassable: false,
-        row:r, col:c,
+        row: r, col: c,
       };
     }
   }
-  // center 4 face-up
+  // Center 4 face-up
   gameState.board[1][1].isFaceUp = true;
   gameState.board[1][2].isFaceUp = true;
   gameState.board[2][1].isFaceUp = true;
@@ -523,35 +543,33 @@ function setupBoard(){
 }
 
 /* ===== Rendering ===== */
-function renderBoard(){
-  gameBoard.innerHTML='';
-  for (let r=0;r<4;r++){
-    for (let c=0;c<4;c++){
+function renderBoard() {
+  gameBoard.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
       const card = gameState.board[r][c];
       const cell = document.createElement('div');
       cell.className = 'card';
       cell.dataset.row = r; cell.dataset.col = c;
 
-      cell.classList.add(card.isFaceUp ? 'face-up' : 'face-down');
-      if (card.isImpassable) cell.classList.add('impassable');
+      cell.classList.toggle('face-up', card.isFaceUp);
+      cell.classList.toggle('face-down', !card.isFaceUp);
+      cell.classList.toggle('impassable', card.isImpassable);
 
-      // Name row
       const nameDiv = document.createElement('div');
       nameDiv.className = 'name';
       let displayName = card.isFaceUp ? card.name : '';
       if (card.isImpassable && card.impassableName) {
         displayName = card.impassableName;
-        nameDiv.classList.add('mushroom');   // 👈 add special class
+        nameDiv.classList.add('mushroom');
       }
       nameDiv.textContent = displayName;
       cell.appendChild(nameDiv);
 
-      // Token/cube layer
       const area = document.createElement('div');
       area.className = 'token-area';
 
-      // Cube
-      if (gameState.blockCubePos && gameState.blockCubePos.r===r && gameState.blockCubePos.c===c){
+      if (gameState.blockCubePos && gameState.blockCubePos.r === r && gameState.blockCubePos.c === c) {
         cell.classList.add('blocked');
         const cube = document.createElement('div');
         cube.className = 'cube';
@@ -559,26 +577,24 @@ function renderBoard(){
         area.appendChild(cube);
       }
 
-      // Tokens
-      if (isOccupiedByPlayer(r,c,'white')) area.appendChild(makeToken('white'));
-      if (isOccupiedByPlayer(r,c,'black')) area.appendChild(makeToken('black'));
+      if (isOccupiedByPlayer(r, c, 'white')) area.appendChild(makeToken('white'));
+      if (isOccupiedByPlayer(r, c, 'black')) area.appendChild(makeToken('black'));
 
       cell.appendChild(area);
 
-      // Highlights
-      const key = keyRC(r,c);
-      if (gameState.highlights.selection && gameState.highlights.selection.r===r && gameState.highlights.selection.c===c){
+      const key = keyRC(r, c);
+      if (gameState.highlights.selection && gameState.highlights.selection.r === r && gameState.highlights.selection.c === c) {
         cell.classList.add('hl-sel');
-      } else if (gameState.turnAction === 'capture_placement' && gameState.highlights.capSpots.has(key)){
+      } else if (gameState.turnAction === 'capture_placement' && gameState.highlights.capSpots.includes(key)) {
         cell.classList.add('hl-move');
-      } else if (gameState.turnAction === 'king_block'){
-        if (!isOccupied(r,c) && !isImpassable(r,c)) cell.classList.add('hl-cube');
-      } else if (gameState.highlights.map.has(key)){
-        const info = gameState.highlights.map.get(key);
+      } else if (gameState.turnAction === 'king_block') {
+        if (!isOccupied(r, c) && !isImpassable(r, c)) cell.classList.add('hl-cube');
+      } else if (gameState.highlights.map[key]) {
+        const info = gameState.highlights.map[key];
         cell.classList.add(info.isCapture ? 'hl-cap' : 'hl-move');
       }
 
-      cell.addEventListener('click', ()=> onCellClick(r,c));
+      cell.addEventListener('click', () => onCellClick(r, c));
       gameBoard.appendChild(cell);
     }
   }
@@ -586,60 +602,32 @@ function renderBoard(){
   updateTurnIndicator();
 }
 
-// function makeToken(color){
-//   const d = document.createElement('div');
-//   d.className = `token ${color}`;
-//   d.textContent = gameState.players[color].token;
-//   if (gameState.players[color].isBloodied) d.classList.add('bloodied');
-//   return d;
-// }
-
 /* ===== Click Flow ===== */
-function onCellClick(r,c){
-  if (gameState.isGameOver) return;
-
-  // Initial placements
-  if (!gameState.players.white.pos || !gameState.players.black.pos){
-    return handleInitialPlacement(r,c);
+function onCellClick(r, c) {
+  if (gameState.isGameOver || (gameState.aiEnabled && gameState.currentPlayer === 'black')) return;
+  
+  if (!gameState.players.white.pos || !gameState.players.black.pos) {
+    handleInitialPlacement(r, c);
+    return;
   }
 
-  //First turn only king action
-  if (gameState.turnCount === 2) {
-    const cell = gameState.board[r][c];
-  }
-
-  // Capture relocation phase
-  if (gameState.turnAction === 'capture_placement'){
-    const key = keyRC(r,c);
-    if (!gameState.highlights.capSpots.has(key)){
+  if (gameState.turnAction === 'capture_placement') {
+    const key = keyRC(r, c);
+    if (!gameState.highlights.capSpots.includes(key)) {
       setMessage("Choose a highlighted adjacent cell.");
       return;
     }
-    const { opponentColor, fromR, fromC } = gameState.capturePlacementData;
-    gameState.players[opponentColor].pos = { r,c };
+    const { opponentColor } = gameState.capturePlacementData;
+    gameState.players[opponentColor].pos = { r, c };
 
-    // Flip destination if facedown; if it was the last facedown, the RELOCATED player wins. ✅ bug fix
-    if (!gameState.board[r][c].isFaceUp){
+    if (!gameState.board[r][c].isFaceUp) {
       gameState.board[r][c].isFaceUp = true;
-      if (countFaceDown() === 0){
-        endGame(opponentColor, "flipped the last face-down card on relocation!");
+      if (countFaceDown() === 0) {
+        endGame(opponentColor, "flipped the last card on relocation!");
         return;
       }
     }
-
-    // Origin becomes impassable (start becomes mushroom ring impassable)
-    const origin = gameState.board[fromR][fromC];
-    if (origin.name === CARD_TYPES.START_KING.name){
-      origin.name = CARD_TYPES.MUSHROOM.name;
-      origin.move = 'mushroom';
-      origin.isFaceUp = true;
-    }
-      origin.isImpassable = true;
-      
-    // } else {
-    //   origin.isImpassable = false;
-    // }
-
+    
     gameState.capturePlacementData = null;
     gameState.turnAction = null;
     clearHighlights();
@@ -647,10 +635,9 @@ function onCellClick(r,c){
     return;
   }
 
-  // King action -> cube placement
-  if (gameState.turnAction === 'king_block'){
-    if (!isOccupied(r,c) && !isImpassable(r,c)){
-      gameState.blockCubePos = { r,c }; // does NOT flip facedown cards
+  if (gameState.turnAction === 'king_block') {
+    if (!isOccupied(r, c) && !isImpassable(r, c)) {
+      gameState.blockCubePos = { r, c };
       gameState.turnAction = null;
       endTurn();
     } else {
@@ -659,11 +646,9 @@ function onCellClick(r,c){
     return;
   }
 
-  // normal selection / move choice
   const me = gameState.players[gameState.currentPlayer];
-  if (me.pos && me.pos.r===r && me.pos.c===c){
-    // Toggle selection
-    if (gameState.selectedTokenPos && gameState.selectedTokenPos.r===r && gameState.selectedTokenPos.c===c){
+  if (me.pos && me.pos.r === r && me.pos.c === c) {
+    if (gameState.selectedTokenPos && gameState.selectedTokenPos.r === r && gameState.selectedTokenPos.c === c) {
       gameState.selectedTokenPos = null;
       clearHighlights();
       choiceBar.classList.remove('show');
@@ -671,206 +656,302 @@ function onCellClick(r,c){
       return;
     }
 
-    gameState.selectedTokenPos = { r,c };
+    gameState.selectedTokenPos = { r, c };
     clearHighlights();
-    gameState.highlights.selection = { r,c };
-    showChoices(r,c);
+    gameState.highlights.selection = { r, c };
+    showChoices(r, c);
     renderBoard();
     return;
   }
 
-  // Clicking a highlighted move
-  const key = keyRC(r,c);
-  if (gameState.highlights.map.has(key)){
-    const info = gameState.highlights.map.get(key);
-    handleMove(r,c,info);
+  const key = keyRC(r, c);
+  if (gameState.highlights.map[key]) {
+    handleMove(r, c, gameState.highlights.map[key]);
     return;
   }
 
-  // Otherwise clear selection
   gameState.selectedTokenPos = null;
   clearHighlights();
   choiceBar.classList.remove('show');
   renderBoard();
 }
 
-//block cube helper
-function hasBlockCube(r,c){
-    return gameState.blockCubePos && gameState.blockCubePos.r === r && gameState.blockCubePos.c === c;
-}
-
-function handleInitialPlacement(r,c){
+function handleInitialPlacement(r, c) {
   const cell = gameState.board[r][c];
-  if (cell.name !== CARD_TYPES.START_KING.name){
+  if (cell.name !== CARD_TYPES.START_KING.name) {
     setMessage("Place on a 'King Start' card.");
     return;
   }
   const other = gameState.currentPlayer === 'white' ? 'black' : 'white';
-  if (gameState.players[other].pos && gameState.players[other].pos.r===r && gameState.players[other].pos.c===c){
+  if (gameState.players[other].pos && gameState.players[other].pos.r === r && gameState.players[other].pos.c === c) {
     setMessage("That start card is occupied.");
     return;
   }
-  gameState.players[gameState.currentPlayer].pos = { r,c };
+  gameState.players[gameState.currentPlayer].pos = { r, c };
 
-  if (!gameState.players.white.pos || !gameState.players.black.pos){
-    gameState.currentPlayer = other;
-    updateTurnIndicator();
+  if (!gameState.players.black.pos) {
+    gameState.currentPlayer = 'black';
     setMessage(`${cap(gameState.currentPlayer)}, place your token on a 'King Start' card.`);
+    if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+      setTimeout(makeAIMove, 500);
+    }
   } else {
     gameState.currentPlayer = 'white';
-    updateTurnIndicator();
-    setMessage("White's turn. Select your token to choose an action.");
+    setMessage("White's turn. Select your token.");
+    autoSelectToken();
   }
+  saveState();
   renderBoard();
 }
 
-/* ===== Action Choice UI ===== */
-function showChoices(r, c){
-  choiceBar.classList.add('show');
+/* ===== Move Handling ===== */
+function handleMove(r, c, info) {
+  saveState();
+  const me = gameState.players[gameState.currentPlayer];
+  const fromR = me.pos.r, fromC = me.pos.c;
+  const opponentColor = gameState.currentPlayer === 'white' ? 'black' : 'white';
 
-  const meColor = gameState.currentPlayer;
-  const cell = gameState.board[r][c];
+  // Move player
+  me.pos = { r, c };
 
-  // Helper to enable/disable button
-  function toggleButton(btn, hasMoves, onClick){
-    if(hasMoves){
-      btn.disabled = false;
-      btn.classList.remove('disabled');
-      btn.onclick = onClick;
-    } else {
-      btn.disabled = true;
-      btn.classList.add('disabled');
-      btn.onclick = null;
-    }
+  // Flip card if face down
+  if (!gameState.board[r][c].isFaceUp) {
+    gameState.board[r][c].isFaceUp = true;
   }
 
-  // 1️⃣ King moves
-  let kingMoves = [];
-  for (let dr=-1; dr<=1; dr++){
-    for (let dc=-1; dc<=1; dc++){
-      if (dr===0 && dc===0) continue;
-      const nr=r+dr, nc=c+dc;
-      if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
-        kingMoves.push({r:nr,c:nc});
+  // Handle Mushroom Teleport
+  if (info.type === 'mushroom_move') {
+    gameState.board[r][c].isImpassable = false; // Ensure not impassable if it was a mushroom ring
+  }
+
+  // Convert start card to mushroom ring
+  const originCard = gameState.board[fromR][fromC];
+  if (originCard.name === CARD_TYPES.START_KING.name) {
+    originCard.name = CARD_TYPES.MUSHROOM.name;
+    originCard.move = CARD_TYPES.MUSHROOM.move;
+    originCard.isImpassable = false; //test
+  } else if (info.type === 'action_move') {
+    originCard.isImpassable = true; // Ensure not impassable if it was a mushroom ring
+  }
+
+  choiceBar.classList.remove('show');
+  clearHighlights();
+
+  if (info.isCapture) {
+    me.captures++;
+    me.isBloodied = false;
+    gameState.players[opponentColor].isBloodied = true;
+    gameState.lastCaptureOrigin = { r, c };
+    gameState.justCaptured = opponentColor;
+    gameState.turnAction = 'capture_placement';
+    gameState.capturePlacementData = { opponentColor, fromR: r, fromC: c };
+    gameState.highlights.capSpots = [];
+
+    // Highlight adjacent spots for relocation
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr, nc = c + dc;
+        if (isValidMove(nr, nc) && !isOccupied(nr, nc)) {
+          gameState.highlights.capSpots.push(keyRC(nr, nc));
+        }
       }
     }
-  }
-  toggleButton(kingBtn, kingMoves.length, () => highlightKingMoves(r,c));
+    setMessage(`${cap(gameState.currentPlayer)}, place your opponent on an adjacent tile.`);
+    renderBoard();
 
-  // 2️⃣ Card moves
-  const pieceMoves = getPieceMoves(r,c, cell.move, meColor);
-  toggleButton(cardBtn, pieceMoves.length, () => highlightCardMoves(r,c));
-
-  // 3️⃣ Mushroom moves
-  const mushroomMoves = [];
-  for (let row=0; row<4; row++){
-    for (let col=0; col<4; col++){
-      const t = gameState.board[row][col];
-      if (row===r && col===c) continue;
-      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !hasBlockCube(row,col) && !isOccupied(row,col)){
-        mushroomMoves.push({r:row,c:col});
-      }
+    if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+      setTimeout(makeAIMove, 500);
     }
+    return;
+  } else if (info.type === 'king_move') {
+    gameState.turnAction = 'king_block';
+    setMessage(`${cap(gameState.currentPlayer)}, place a block cube.`);
+    renderBoard();
+    
+    if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+      setTimeout(() => {
+        const possibleBlocks = [];
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (!isImpassable(r, c) && !isOccupied(r, c)) {
+              possibleBlocks.push({ r, c });
+            }
+          }
+        }
+        if (possibleBlocks.length > 0) {
+          const blockPos = possibleBlocks[Math.floor(Math.random() * possibleBlocks.length)];
+          gameState.blockCubePos = { r: blockPos.r, c: blockPos.c };
+          gameState.turnAction = null;
+          renderBoard();
+          endTurn();
+        }
+      }, 500);
+    }
+    return;
   }
-  toggleButton(mushBtn, mushroomMoves.length, () => highlightMushroomMoves(r,c));
+  endTurn();
+}
 
-  // Optional: message if no moves available
-  if (!kingMoves.length && !pieceMoves.length && !mushroomMoves.length){
-    setMessage("No legal moves available for this token.");
-    const winner = gameState.currentPlayer==='white' ? 'black':'white';
+function endTurn() {
+  // Check win conditions
+  const me = gameState.players[gameState.currentPlayer];
+  if (me.captures >= 2) {
+    endGame(gameState.currentPlayer, "has captured their opponent twice!");
+    return;
+  }
+  if (countFaceDown() === 0) {
+    endGame(gameState.currentPlayer, "has revealed the last face-down card!");
+    return;
+  }
+
+  // Switch player
+  gameState.currentPlayer = gameState.currentPlayer === 'white' ? 'black' : 'white';
+  gameState.turnCount++;
+  gameState.selectedTokenPos = null;
+  if (gameState.justCaptured !== gameState.currentPlayer) {
+    gameState.justCaptured = null;
+    gameState.lastCaptureOrigin = null;
+  }
+  clearHighlights();
+  
+  renderBoard();
+
+  // Check if new player has any moves
+  const allMoves = generateAllMovesForPlayer(gameState.currentPlayer);
+  if (allMoves.length === 0) {
+    const winner = gameState.currentPlayer === 'white' ? 'black' : 'white';
     endGame(winner, `${cap(gameState.currentPlayer)} has no legal moves.`);
     return;
+  }
+
+  setMessage(`${cap(gameState.currentPlayer)}'s turn.`);
+  autoSelectToken();
+  saveState();
+
+  if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+    setTimeout(makeAIMove, 750);
+  }
+}
+
+function endGame(winner, reason) {
+  gameState.isGameOver = true;
+  renderBoard();
+  const nextMatchStarter = () => startNewMatch(winner);
+  showModal(`${cap(winner)} Wins the Match!`, reason, "Next Match", nextMatchStarter);
+}
+
+function showModal(title, text, buttonText, onClick) {
+  modal.style.display = 'flex';
+  modalTitle.textContent = title;
+  modalText.textContent = text;
+  modalButton.textContent = buttonText;
+  modalButton.onclick = () => {
+    modal.style.display = 'none';
+    onClick();
+  };
+}
+
+/* ===== Action Choice UI ===== */
+function showChoices(r, c) {
+  choiceBar.classList.add('show');
+  
+  function toggleButton(btn, hasMoves, onClick) {
+    btn.disabled = !hasMoves;
+    btn.classList.toggle('disabled', !hasMoves);
+    btn.onclick = hasMoves ? onClick : null;
+  }
+
+  const kingMoves = getKingMoves(r, c);
+  toggleButton(kingBtn, kingMoves.length > 0, () => highlightMoves(r, c, kingMoves, 'king_move'));
+
+  const cardMoves = getPieceMoves(r, c, gameState.board[r][c].move, gameState.currentPlayer);
+  toggleButton(cardBtn, cardMoves.length > 0, () => highlightMoves(r, c, cardMoves, 'action_move'));
+  
+  const mushroomMoves = getMushroomMoves(r, c);
+  toggleButton(mushBtn, mushroomMoves.length > 0, () => highlightMoves(r, c, mushroomMoves, 'mushroom_move'));
+
+  if (kingMoves.length === 0 && cardMoves.length === 0 && mushroomMoves.length === 0) {
+    setMessage("No legal moves available.");
   } else {
     setMessage("Select a move type:");
   }
 }
 
 /* ===== Move Generation ===== */
-function highlightKingMoves(r,c){
+function highlightMoves(r, c, moves, type) {
   clearHighlights();
-  gameState.highlights.selection = { r,c };
+  gameState.highlights.selection = { r, c };
+  for (const m of moves) {
+    gameState.highlights.map[keyRC(m.r, m.c)] = { ...m, type };
+  }
+  renderBoard();
+}
+
+function getKingMoves(r, c) {
   const moves = [];
-  for (let dr=-1; dr<=1; dr++){
-    for (let dc=-1; dc<=1; dc++){
-      if (dr===0 && dc===0) continue;
-      const nr=r+dr, nc=c+dc;
-      if (isValidMove(nr,nc) && !isOccupied(nr,nc)){
-        moves.push({ r:nr, c:nc, type:'king_move', isCapture:false });
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = r + dr, nc = c + dc;
+      if (isValidMove(nr, nc) && !isOccupied(nr, nc)) {
+        moves.push({ r: nr, c: nc, isCapture: false });
       }
     }
   }
-  for (const m of moves) gameState.highlights.map.set(keyRC(m.r,m.c), m);
-  setMessage("King Action: move 1, then place block cube.");
-  renderBoard();
+  return moves;
 }
 
-function highlightCardMoves(r,c){
-  clearHighlights();
-  gameState.highlights.selection = { r,c };
-  const me = gameState.currentPlayer;
-  const pieceMoves = getPieceMoves(r,c, gameState.board[r][c].move, me)
-    .map(m => ({...m, type:'action_move'}));
-  for (const m of pieceMoves) gameState.highlights.map.set(keyRC(m.r,m.c), m);
-  setMessage("Card Action: move by the card's pattern (capture allowed).");
-  renderBoard();
-}
-
-function highlightMushroomMoves(r,c){
-  clearHighlights();
-  gameState.highlights.selection = { r,c };
+function getMushroomMoves(r, c) {
   const moves = [];
-  for (let row=0; row<4; row++){
-    for (let col=0; col<4; col++){
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
       const t = gameState.board[row][col];
-      if (row===r && col===c) continue;
-      if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !hasBlockCube(row,col) && !isOccupied(row,col)){
-        moves.push({ r:row, c:col, type:'mushroom_move', isCapture:false });
+      if (row === r && col === c) continue;
+      if (t.move === 'mushroom' && t.isFaceUp && !isImpassable(row, col) && !isOccupied(row, col)) {
+        moves.push({ r: row, c: col, isCapture: false });
       }
     }
   }
-  for (const m of moves) gameState.highlights.map.set(keyRC(m.r,m.c), m);
-  setMessage("Mushroom Teleport: jump to any face-up unoccupied mushroom card.");
-  renderBoard();
+  return moves;
 }
 
-function getPieceMoves(r,c,piece,meColor){
-  const opp = meColor==='white' ? 'black' : 'white';
-  const moves=[];
-  const dirs={
-    rook:  [[-1,0],[1,0],[0,-1],[0,1]],
-    bishop:[[-1,-1],[-1,1],[1,-1],[1,1]],
-    queen: [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]],
-    king:  [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]],
-    knight:[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]],
+function getPieceMoves(r, c, piece, meColor) {
+  const opp = meColor === 'white' ? 'black' : 'white';
+  const moves = [];
+  const dirs = {
+    rook: [[-1, 0], [1, 0], [0, -1], [0, 1]],
+    bishop: [[-1, -1], [-1, 1], [1, -1], [1, 1]],
+    queen: [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]],
+    king: [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]],
+    knight: [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]],
   };
-  const sliding = ['rook','bishop','queen'].includes(piece);
+  const sliding = ['rook', 'bishop', 'queen'].includes(piece);
   const vecs = dirs[piece] || [];
 
-  const isLastOrigin = gameState.lastCaptureOrigin &&
-    gameState.lastCaptureOrigin.r === r && gameState.lastCaptureOrigin.c === c;
+  const isLastOrigin = gameState.lastCaptureOrigin && gameState.lastCaptureOrigin.r === r && gameState.lastCaptureOrigin.c === c;
   const wasJustCaptured = gameState.justCaptured === meColor;
 
-  for (const [dr,dc] of vecs){
-    let nr=r+dr, nc=c+dc;
-    if (sliding){
-      while (isValidPosition(nr,nc)){
-        if (isImpassable(nr,nc)) break;
-        if (isOccupiedByPlayer(nr,nc,meColor)) break;
-        const isCap = isOccupiedByPlayer(nr,nc,opp);
-        // no immediate recapture
-        if (!(isCap && (wasJustCaptured || isLastOrigin))){
-          moves.push({ r:nr, c:nc, isCapture:isCap });
+  for (const [dr, dc] of vecs) {
+    let nr = r + dr, nc = c + dc;
+    if (sliding) {
+      while (isValidPosition(nr, nc)) {
+        if (isImpassable(nr, nc)) break;
+        if (isOccupiedByPlayer(nr, nc, meColor)) break;
+        const isCap = isOccupiedByPlayer(nr, nc, opp);
+        if (!(isCap && wasJustCaptured)) {
+          moves.push({ r: nr, c: nc, isCapture: isCap });
         }
         if (isCap) break;
-        nr+=dr; nc+=dc;
+        nr += dr; nc += dc;
       }
-    } else { // king or knight step
-      if (isValidPosition(nr,nc) && (!isImpassable(nr,nc))){
-        const canJump = (piece==='knight');
-        if ((canJump || !isImpassable(nr,nc)) && !isOccupiedByPlayer(nr,nc,meColor)){
-          const isCap = isOccupiedByPlayer(nr,nc,opp);
-          if (!(isCap && (wasJustCaptured || isLastOrigin))){
-            moves.push({ r:nr, c:nc, isCapture:isCap });
+    } else {
+      if (isValidPosition(nr, nc)) {
+        const canJump = (piece === 'knight');
+        if ((canJump || !isImpassable(nr, nc)) && !isOccupiedByPlayer(nr, nc, meColor)) {
+          const isCap = isOccupiedByPlayer(nr, nc, opp);
+          if (!(isCap && wasJustCaptured)) {
+            moves.push({ r: nr, c: nc, isCapture: isCap });
           }
         }
       }
@@ -879,216 +960,155 @@ function getPieceMoves(r,c,piece,meColor){
   return moves;
 }
 
-/* ===== Execute Move ===== */
-function handleMove(toR, toC, info){
-  if (gameState.actionChosen) return; // ✅ safety
-  const meColor = gameState.currentPlayer;
-  const oppColor= meColor==='white' ? 'black':'white';
-  const fromR = gameState.selectedTokenPos.r;
-  const fromC = gameState.selectedTokenPos.c;
+function generateAllMovesForPlayer(color) {
+  const player = gameState.players[color];
+  if (!player.pos) return [];
+  const { r, c } = player.pos;
+  const card = gameState.board[r][c];
 
-  // no immediate recapture guard (extra)
-  const isLastOrigin = gameState.lastCaptureOrigin &&
-    gameState.lastCaptureOrigin.r===fromR && gameState.lastCaptureOrigin.c===fromC;
-  const wasJustCaptured = gameState.justCaptured === meColor;
-  if (info.isCapture && (wasJustCaptured || isLastOrigin)){
-    setMessage("Cannot immediately recapture.");
-    clearHighlights(); renderBoard(); return;
-  }
+  const allMoves = [
+    ...getKingMoves(r, c).map(m => ({ ...m, type: 'king_move' })),
+    ...getPieceMoves(r, c, card.move, color).map(m => ({ ...m, type: 'action_move' })),
+    ...getMushroomMoves(r, c).map(m => ({ ...m, type: 'mushroom_move' }))
+  ];
+  return allMoves;
+}
 
-  saveState();
-
-  const fromCard = gameState.board[fromR][fromC];
-  const toCard   = gameState.board[toR][toC];
-
-  // Move
-  gameState.players[meColor].pos = { r:toR, c:toC };
-  clearHighlights();
-
-  // Flip destination if facedown
-  if (!toCard.isFaceUp){
-    toCard.isFaceUp = true;
-    // If last face-down flipped by the mover, the mover wins.
-    if (countFaceDown() === 0){
-      endGame(meColor, "flipped the last face-down card!");
-      return;
-    }
-  }
-
-  // Capture handling
-  if (info.isCapture){
-    handleCapture(oppColor, toR, toC, fromR, fromC);
-    gameState.actionChosen = true;
-    saveState();
-    return;
-  }
-
-  // Post-action card turning / flow
-  if (info.type === 'king_move'){
-    // Start card becomes mushroom ring (not impassable yet for king move), then place cube
-    if (fromCard.name === CARD_TYPES.START_KING.name){
-      fromCard.name = CARD_TYPES.MUSHROOM.name;
-      fromCard.move = 'mushroom';
-      fromCard.isFaceUp = true; 
-      fromCard.isImpassable = false; //Use true if you want impassable right away <lever>
-    }
-    gameState.actionChosen = true;
-    gameState.turnAction = 'king_block';
-    setMessage(`${cap(meColor)}: place the block cube.`);
-    renderBoard();
-    return;
-  }
-
-  if (info.type === 'action_move'){
-    // After using a card action, the origin turns impassable (start becomes mushroom impassable)
-    if (fromCard.name === CARD_TYPES.START_KING.name){
-      fromCard.name = CARD_TYPES.MUSHROOM.name;
-      fromCard.move = 'mushroom';
-      fromCard.isFaceUp = true;
-      fromCard.isImpassable = true;
-    } else {
-      fromCard.isImpassable = true;
-    }
-    gameState.actionChosen = true;
-    endTurn();
-    return;
-  }
-
-  if (info.type === 'mushroom_move'){
-    // Teleported mushroom becomes impassable (the destination ring)
-    toCard.isImpassable = false;
-    gameState.actionChosen = true;
-    endTurn();
-    return;
+/* ===== AI PLAYER ===== */
+function toggleAI() {
+  gameState.aiEnabled = !gameState.aiEnabled;
+  aiToggleBtn.textContent = `Play vs AI: ${gameState.aiEnabled ? 'On' : 'Off'}`;
+  aiDifficulty.style.display = gameState.aiEnabled ? 'inline-block' : 'none';
+  if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+    setTimeout(makeAIMove, 500);
   }
 }
 
-function handleCapture(opponentColor, captureR, captureC, fromR, fromC){
-  // wound opponent
-  gameState.players[opponentColor].isBloodied = true;
-  gameState.players[gameState.currentPlayer].captures++;
+function makeAIMove() {
+  if (gameState.isGameOver || gameState.currentPlayer !== 'black') return;
 
-  gameState.lastCaptureOrigin = { r: fromR, c: fromC };
-  gameState.justCaptured = opponentColor;
+  const me = gameState.players.black;
 
-  // Build adjacent placement spots (not the origin )
-  const valid=[];
-  for (let dr=-1; dr<=1; dr++){
-    for (let dc=-1; dc<=1; dc++){
-      if (dr===0 && dc===0) continue;
-      const nr=captureR+dr, nc=captureC+dc;
-      if (!isValidPosition(nr,nc)) continue;
-      if (isOccupied(nr,nc)) continue;
-      if (isImpassable(nr,nc)) continue;
-      if (nr===fromR && nc===fromC) continue;
-      valid.push({r:nr,c:nc});
+  // Handle initial placement
+  if (!me.pos) {
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const card = gameState.board[r][c];
+        if (card.name === CARD_TYPES.START_KING.name && !isOccupied(r, c)) {
+          me.pos = { r, c };
+          gameState.board[r][c].isFaceUp = true;
+          setMessage(`${cap(gameState.currentPlayer)} places their token.`);
+          renderBoard();
+          if (gameState.players.white.pos && gameState.players.black.pos) {
+            gameState.currentPlayer = 'white';
+            setMessage("White's turn. Select your token.");
+            autoSelectToken();
+          }
+          saveState();
+          return;
+        }
+      }
     }
-  }
-
-  if (!valid.length){
-    endGame(gameState.currentPlayer, "opponent had no adjacent placement.");
+    if (gameState.debug) console.error("AI could not find a START_KING card to place on!");
     return;
   }
 
-  gameState.turnAction = 'capture_placement';
-  gameState.capturePlacementData = { opponentColor, fromR, fromC };
-  gameState.highlights.capSpots = new Set(valid.map(p=>keyRC(p.r,p.c)));
-  setMessage("Capture! Place your opponent on a highlighted adjacent card.");
-
-  renderBoard();
-
-  // Immediate 2 captures = win
-  if (gameState.players[gameState.currentPlayer].captures >= 2){
-    endGame(gameState.currentPlayer, "captured twice!");
-  }
-}
-
-/* ===== Turn & Win Flow ===== */
-function endTurn(){
-  if (gameState.isGameOver) return;
-
-  gameState.selectedTokenPos = null;
-  clearHighlights();
-  choiceBar.classList.remove('show');
-
-  // Reset action flag
-  gameState.actionChosen = false;
-
-  // Reset justCaptured marker at the end of THIS side's turn
-  if (gameState.justCaptured === gameState.currentPlayer){
-    gameState.justCaptured = null;
-  }
-
-  gameState.turnCount++;
-  gameState.currentPlayer = gameState.currentPlayer==='white' ? 'black' : 'white';
-
-  updateTurnIndicator();
-  renderBoard();
-
-  autoSelectToken();
-
-  // Stalemate: no legal moves for side to play
-  if (!hasAnyLegalMoves(gameState.currentPlayer)){
-    const winner = gameState.currentPlayer==='white' ? 'black':'white';
-    endGame(winner, `${cap(gameState.currentPlayer)} has no legal moves.`);
+  // Handle capture placement
+  if (gameState.turnAction === 'capture_placement') {
+    const { opponentColor } = gameState.capturePlacementData;
+    const capSpots = gameState.highlights.capSpots;
+    if (capSpots.length > 0) {
+      const spotKey = capSpots[Math.floor(Math.random() * capSpots.length)];
+      const [r, c] = spotKey.split(',').map(Number);
+      gameState.players[opponentColor].pos = { r, c };
+      if (!gameState.board[r][c].isFaceUp) {
+        gameState.board[r][c].isFaceUp = true;
+      }
+      gameState.turnAction = null;
+      gameState.capturePlacementData = null;
+      clearHighlights();
+      renderBoard();
+      endTurn();
+    }
     return;
   }
-  setMessage(`${cap(gameState.currentPlayer)}'s turn.`);
-}
 
-function hasAnyLegalMoves(color){
-  const p = gameState.players[color];
-  if (!p.pos) return false;
-  // Combine all potential actions quickly to test existence
-  const r=p.pos.r, c=p.pos.c;
+  gameState.aiThinking = true;
+  setMessage("AI is thinking...");
 
-  // any king step?
-  for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++){
-    if (dr||dc){
-      const nr=r+dr, nc=c+dc;
-      if (isValidMove(nr,nc) && !isOccupied(nr,nc)) return true;
+  const allMoves = generateAllMovesForPlayer('black');
+  if (allMoves.length === 0) {
+    gameState.aiThinking = false;
+    return;
+  }
+
+  let bestMove = null;
+  if (gameState.aiDifficulty === 'easy') {
+    bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+  } else {
+    let bestScore = -Infinity;
+    for (const move of allMoves) {
+      const score = evaluateMove('black', move);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
     }
   }
 
-  // any card move?
-  const pieceMoves = getPieceMoves(r,c, gameState.board[r][c].move, color);
-  if (pieceMoves.length) return true;
-
-  // any mushroom move?
-  for (let row=0; row<4; row++) for (let col=0; col<4; col++){
-    const t = gameState.board[row][col];
-    if (t.move==='mushroom' && t.isFaceUp && !t.isImpassable && !isOccupied(row,col) && !(row===r && col===c)) return true;
+  if (bestMove) {
+    handleMove(bestMove.r, bestMove.c, bestMove);
   }
 
-  return false;
+  gameState.aiThinking = false;
 }
 
-function endGame(winner, reason){
-  gameState.isGameOver = true;
-  gameState.players[winner].matches++;
-  updatePlayerInfo();
+function evaluateMove(aiColor, move) {
+  let score = Math.random() * 0.1;
+  const opponentColor = aiColor === 'white' ? 'black' : 'white';
+  const toR = move.r;
+  const toC = move.c;
 
-  const wName = cap(winner);
-  modalTitle.textContent = `${wName} wins the match!`;
-  modalText.textContent  = `Reason: ${reason}`;
-  modalButton.textContent = (gameState.players[winner].matches>=2) ? "Play Again" : "Next Match";
-  modal.style.display='flex';
+  if (move.isCapture) {
+    score += 100;
+  }
+  if (!gameState.board[toR][toC].isFaceUp) {
+    score += 10;
+  }
 
-  modalButton.onclick = () => {
-    if (gameState.players[winner].matches>=2){
-      // new game
-      gameState.players.white.matches = 0;
-      gameState.players.black.matches = 0;
-    }
-    modal.style.display='none';
-    startNewMatch();
+  const cardPower = { 
+    'Queen': 5, 
+    'Rook': 4, 
+    'Knight': 3, 
+    'Bishop': 3, 
+    'King': 2, 
+    'Mushroom Ring': 1, 
+    'King Start': 1
   };
+  const targetCard = gameState.board[toR][toC];
+  score += cardPower[targetCard.name] || 0;
+
+  const oppPos = gameState.players[opponentColor].pos;
+  if (oppPos) {
+    const dist = Math.abs(toR - oppPos.r) + Math.abs(toC - oppPos.c);
+    if (dist === 1 && !move.isCapture) {
+      score -= 20;
+    }
+  }
+
+  if (gameState.aiDifficulty === 'hard') {
+    const centerDist = Math.abs(toR - 1.5) + Math.abs(toC - 1.5);
+    score -= centerDist * 2;
+    const oppMoves = generateAllMovesForPlayer(opponentColor);
+    if (oppMoves.some(m => m.isCapture && m.r === toR && m.c === toC)) {
+      score -= 30;
+    }
+  }
+
+  return score;
 }
 
-/* ===== Events ===== */
-undoBtn.addEventListener('click', undoMove);
-
-/* ===== Start ===== */
+// Start the game
 init();
 </script>
 </body>
