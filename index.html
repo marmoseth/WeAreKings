@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title> 1.0.5.20</title>
+<title> 1.0.5.21</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -244,7 +244,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings|1.0.5.20</h1>
+    <h1>We Are Kings|1.0.5.21</h1>
     <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three wins game</div>
 
     <div class="players row">
@@ -465,14 +465,11 @@ function startNewGame() {
     highlights: { map: {}, capSpots: [], selection: null },
     debug: false // For conditional logging
   };
-  showModal("Begin Game", "White goes first.", "Start", startNewMatch);
+  history = [];
+  showModal("Begin Game", "White goes first. Best of three matches wins the game.", "Start", startNewMatch);
 }
 
-function startNewMatch(winner = null) {
-  if (winner) {
-    gameState.players[winner].matches++;
-  }
-
+function startNewMatch() {
   // Reset match-specific state
   gameState.isGameOver = false;
   gameState.board = [];
@@ -836,9 +833,14 @@ function endTurn() {
 
 function endGame(winner, reason) {
   gameState.isGameOver = true;
+  gameState.players[winner].matches++; // Increment match count
   renderBoard();
-  const nextMatchStarter = () => startNewMatch(winner);
-  showModal(`${cap(winner)} Wins the Match!`, reason, "Next Match", nextMatchStarter);
+
+  if (gameState.players[winner].matches >= 2) {
+    showModal(`${cap(winner)} Wins the Game!`, `${cap(winner)} has won ${gameState.players[winner].matches} matches.`, "New Game", startNewGame);
+  } else {
+    showModal(`${cap(winner)} Wins the Match!`, reason, "Next Match", startNewMatch);
+  }
 }
 
 function showModal(title, text, buttonText, onClick) {
@@ -1079,7 +1081,7 @@ function evaluateMove(aiColor, move) {
     'Knight': 3, 
     'Bishop': 3, 
     'King': 2, 
-    'Mushroom Ring': 1, 
+    'Mushroom Ring': 3, 
     'King Start': 1
   };
   const targetCard = gameState.board[toR][toC];
