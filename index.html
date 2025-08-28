@@ -160,14 +160,14 @@ body {
   z-index: 2;
 }
 .white {
-  background: #22352c; /* Dark background for white player */
-  color: #f0f6f3; /* Light font for white king emoji */
+  background: #000; /* Dark background for white player */
+  color: #FFF; /* Light font for white king emoji */
   border: 2px solid #f0f6f3; /* White border */
   box-shadow: 0 0 8px rgba(240,246,243,0.6), 0 4px 12px rgba(0,0,0,0.3); /* White glow + default shadow */
 }
 .black {
-  background: #f0f6f3; /* Light background for black player */
-  color: #22352c; /* Dark font for black king emoji */
+  background: #FFF; /* Light background for black player */
+  color: #000; /* Dark font for black king emoji */
   border: 2px solid #22352c; /* Black border */
   box-shadow: 0 0 8px rgba(34,53,44,0.6), 0 4px 12px rgba(0,0,0,0.3); /* Black shadow + default shadow */
 }
@@ -342,6 +342,18 @@ body {
   </div>
 
 <script>
+
+function showAlert(message) {
+    //alert(message);
+    modal.style.display = 'flex';
+    modalTitle.textContent = 'Game Update';
+    modalText.textContent = message;
+    modalButton.textContent = 'OK';
+    modalButton.onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
 /* ===== Rows & Cols ===== */
 const ROWS = 4;
 const COLS = 4;
@@ -633,6 +645,8 @@ function renderBoard() {
   updateTurnIndicator();
 }
 
+
+
 /* ===== Click Flow ===== */
 function onCellClick(r, c) {
   if (gameState.isGameOver || (gameState.aiEnabled && gameState.currentPlayer === 'black')) return;
@@ -753,6 +767,7 @@ function handleMove(r, c, info) {
   // Handle Mushroom Teleport
   if (info.type === 'mushroom_move') {
     gameState.board[r][c].isImpassable = false; // Ensure not impassable if it was a mushroom ring
+    showAlert(`${cap(gameState.currentPlayer)} teleports to a Mushroom Ring!`); //showalert
   }
 
   // Convert start card to mushroom ring
@@ -777,6 +792,8 @@ function handleMove(r, c, info) {
     gameState.turnAction = 'capture_placement';
     gameState.capturePlacementData = { opponentColor, fromR: r, fromC: c };
     gameState.highlights.capSpots = [];
+
+    showAlert(`${cap(gameState.currentPlayer)} has captured ${cap(opponentColor)}!`); //showalert
 
     // Highlight adjacent spots for relocation
     for (let dr = -1; dr <= 1; dr++) {
@@ -876,6 +893,30 @@ function endGame(winner, reason) {
     showModal(`${cap(winner)} Wins the Match!`, reason, "Next Match", startNewMatch);
   }
 }
+
+// ===== Logging =====
+function logDataToSheet(winner, reason) {
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUGfDj_GCJkN9bj9mASdAQYjyg_deJDdRbginA60c-tmseMvt7TGrRe85KlICZT0n2/exec';
+
+  const data = {
+    winner: winner,
+    reason: reason,
+    whiteMatches: gameState.players.white.matches,
+    blackMatches: gameState.players.black.matches
+  };
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors', // Important for sending from a local file or different domain
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => console.log('Successfully logged game data.'))
+  .catch(error => console.error('Error logging data:', error));
+}
+// ====================================================================
 
 function showModal(title, text, buttonText, onClick) {
   modal.style.display = 'flex';
@@ -1011,6 +1052,8 @@ function generateAllMovesForPlayer(color) {
 function toggleAI() {
   gameState.aiEnabled = !gameState.aiEnabled;
   aiToggleBtn.textContent = `Play vs AI: ${gameState.aiEnabled ? 'On' : 'Off'}`;
+  if (gameState.aiEnabled) {showAlert("AI Enabled. Black will be controlled by the AI.");}
+  else {showAlert("AI Disabled. Both players are human-controlled.");}
   aiDifficulty.style.display = gameState.aiEnabled ? 'inline-block' : 'none';
   if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
     setTimeout(makeAIMove, 500);
