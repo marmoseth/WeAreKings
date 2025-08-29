@@ -13,7 +13,7 @@
     --panel-2:#1e2f27;
     --accent:#8fd3a8;   /* soft moss */
     --accent-2:#cbeac6; /* highlight */
-    --warn:#e57373;     /* red for captures/blocked */
+    --warn:#a73232;     /* red for captures/blocked */
     --selected:#6cd14e;     /* selection */
     --ink:#e9f5ee;      /* text */
     --muted:#a8c7b6;
@@ -138,30 +138,52 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .token-area{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    position:relative;
-  }
 
-  /* Tokens & cube */
-.token {
-  width: 55px; /* Larger size for tokens (48 prev) */
-  height: 55px; /* Larger size for tokens */
-  aspect-ratio: 1/1; /* Enforce square shape */
+  .token-area {
+  flex: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 5.4rem; /* Larger for bigger king emoji */
-  line-height: 1; /* Prevent vertical offset */
-  font-weight: 400; /* Normal weight for emoji */
-  border-radius: 50%; /* Circular shape */
-  transition: transform .15s ease, box-shadow .15s ease;
-  position: absolute;
-  top: 1.75%;
-  left: 26.7%;
-  transform: translate(-50%, -50%); 
+  min-height: 55px; /* matches token size */
+}
+
+/* Token container */
+.token {
+  width: 55px;
+  height: 55px;
+  font-size: 5.5rem;         /* Emoji size */
+  line-height: 1;
+  display: flex;             /* Center emoji */
+  align-items: center;
+  justify-content: center;
+  position: relative;        /* For ::after pseudo-element */
+  box-sizing: border-box;
   z-index: 2;
 }
+
+/* Bloodied state overlay */
+.token.bloodied::after {
+  content: "";
+  position: absolute;
+  width: 35%;                /* Circle slightly smaller than token */
+  height: 35%;
+  border-radius: 100%;
+  border: 10px solid rgb(194, 56, 56);
+  filter: blur(4px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+  box-shadow: 0 0 0px var(--warn), inset 0 0 0px var(--warn); /* Red glow for bloodied */
+  border-color: var(--warn); /* Red border for bloodied */
+  pointer-events: none;      /* Don’t block clicks */
+  z-index: 1;
+}
+
+.token span {
+  position: relative;
+  z-index: 3; /* Higher than token container */
+}
+
 .white {
   background: #00000000; /* Dark background for white player */
   color: #FFF; /* Light font for white king emoji */
@@ -173,11 +195,6 @@ body {
   color: #000; /* Dark font for black king emoji */
   /*border: 2px solid #22352c; /* Black border */
   /*box-shadow: 0 0 8px rgba(34,53,44,0.6), 0 4px 12px rgba(0,0,0,0.3); /* Black shadow + default shadow */
-}
-.bloodied {
-  box-shadow: 0 0 10px var(--warn), inset 0 0 5px var(--warn); /* Red glow for bloodied */
-  border-color: var(--warn); /* Red border for bloodied */
-  animation: pulse 1s ease-in-out infinite; /* Pulse when bloodied */
 }
 
 /* Animation for selected or bloodied tokens */
@@ -192,7 +209,7 @@ body {
     background:#2e5a48; color:#e6fff2; border:2px solid #091a14;
     display:flex; align-items:center; justify-content:center;
     font-weight:800; letter-spacing:.5px;
-    position:absolute; z-index:1;
+    position:absolute; z-index:2;
     box-shadow: 0 4px 12px rgba(0,0,0,.35);
   }
   .blocked{ outline:3px solid var(--warn); outline-offset:-3px; }
@@ -397,22 +414,33 @@ let gameState = {}; // Will be initialized in startNewGame
 function makeToken(color) {
   const d = document.createElement('div');
   d.className = `token ${color}`;
-  d.textContent = color === 'white' ? '♔' : '♔'; // ♚♔ Use chess king emojis
-  d.setAttribute('aria-label', `${cap(color)} King`); // Accessibility
+  d.setAttribute('aria-label', `${cap(color)} King`);
 
-  if (gameState.players[color].isBloodied) d.classList.add('bloodied');
+  // King inside a span (prevents layout shift when adding badge)
+  const king = document.createElement('span');
+  king.textContent = color === 'white' ? '♔' : '♔';
+  d.appendChild(king);
 
+  // Always check the current bloodied state
+  if (gameState.players[color].isBloodied) {
+
+    d.classList.add('bloodied');
+    d.setAttribute('aria-label', `${cap(color)} King (Wounded)`);
+  } else {
+    d.classList.remove('bloodied');
+  }
+
+  // Highlight if selected
   const sel = gameState.selectedTokenPos;
   if (sel && sel.r === gameState.players[color].pos.r && sel.c === gameState.players[color].pos.c) {
     d.style.transform = "scale(1.05)";
     d.style.boxShadow = "0 0 12px var(--gold), 0 6px 16px rgba(0,0,0,0.35)";
-    d.style.animation = "pulse 1s ease-in-out infinite"; // Pulse when selected
+    d.style.animation = "pulse 1s ease-in-out infinite";
     d.style.zIndex = 5;
   } else {
     d.style.transform = "scale(1.0)";
-    d.style.animation = ""; // Remove animation when not selected
+    d.style.animation = "";
   }
-
   return d;
 }
 
