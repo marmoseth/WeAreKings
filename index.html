@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title> 1.0.5.22</title>
+<title> 1.0.5.23</title>
 <style>
   :root{
     --bg1:#0b1d16; /* deep forest */
@@ -14,7 +14,7 @@
     --accent:#8fd3a8;   /* soft moss */
     --accent-2:#cbeac6; /* highlight */
     --warn:#e57373;     /* red for captures/blocked */
-    --gold:#f7d774;     /* selection */
+    --selected:#6cd14e;     /* selection */
     --ink:#e9f5ee;      /* text */
     --muted:#a8c7b6;
   }
@@ -145,31 +145,34 @@ body {
 
   /* Tokens & cube */
 .token {
-  width: 48px; /* Larger size for tokens */
-  height: 48px; /* Larger size for tokens */
+  width: 55px; /* Larger size for tokens (48 prev) */
+  height: 55px; /* Larger size for tokens */
   aspect-ratio: 1/1; /* Enforce square shape */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.4rem; /* Larger for bigger king emoji */
+  font-size: 5.4rem; /* Larger for bigger king emoji */
   line-height: 1; /* Prevent vertical offset */
   font-weight: 400; /* Normal weight for emoji */
   border-radius: 50%; /* Circular shape */
   transition: transform .15s ease, box-shadow .15s ease;
   position: absolute;
+  top: 1.75%;
+  left: 26.7%;
+  transform: translate(-50%, -50%); 
   z-index: 2;
 }
 .white {
-  background: #000; /* Dark background for white player */
+  background: #00000000; /* Dark background for white player */
   color: #FFF; /* Light font for white king emoji */
-  border: 2px solid #f0f6f3; /* White border */
-  box-shadow: 0 0 8px rgba(240,246,243,0.6), 0 4px 12px rgba(0,0,0,0.3); /* White glow + default shadow */
+  /*border: 2px solid #f0f6f3; /* White border */
+  /*box-shadow: 0 0 8px rgba(240,246,243,0.6), 0 4px 12px rgba(0,0,0,0.3); /* White glow + default shadow */
 }
 .black {
-  background: #FFF; /* Light background for black player */
+  background: #ffffff00; /* Light background for black player */
   color: #000; /* Dark font for black king emoji */
-  border: 2px solid #22352c; /* Black border */
-  box-shadow: 0 0 8px rgba(34,53,44,0.6), 0 4px 12px rgba(0,0,0,0.3); /* Black shadow + default shadow */
+  /*border: 2px solid #22352c; /* Black border */
+  /*box-shadow: 0 0 8px rgba(34,53,44,0.6), 0 4px 12px rgba(0,0,0,0.3); /* Black shadow + default shadow */
 }
 .bloodied {
   box-shadow: 0 0 10px var(--warn), inset 0 0 5px var(--warn); /* Red glow for bloodied */
@@ -197,7 +200,7 @@ body {
   /* Highlights */
   .hl-move{ box-shadow: inset 0 0 0 4px rgba(143,211,168,.85); }
   .hl-cap{  box-shadow: inset 0 0 0 4px rgba(229,103,103,.95); }
-  .hl-sel{  outline:3px solid var(--gold); outline-offset:-3px; z-index:3; }
+  .hl-sel{  outline:3px solid var(--selected); outline-offset:-3px; z-index:3; }
   .hl-cube{ box-shadow: inset 0 0 0 4px rgb(161,199,101); } /* block cube highlight */
   /* Hover polish */
   .card:not(.impassable):hover{ transform: scale(1.03); }
@@ -275,8 +278,8 @@ body {
 </head>
 <body>
   <div class="wrap">
-    <h1>We Are Kings | 1.0.5.22</h1>
-    <div class="sub">To win match: Capture your opponent twice • Reveal the last facedown card • Opponent has no valid moves • Best of three matches wins game</div>
+    <h1>We Are Kings | 1.0.5.23</h1>
+    <div class="sub">Best of three matches wins the game | To win match: Capture opponent twice • Reveal the last facedown card • Opponent has no valid moves • </div>
 
     <div class="players row">
       <div id="player-white-info" class="panel player">
@@ -321,15 +324,18 @@ body {
       <li>On your turn, select your token and choose an action:
         <ul>
           <li><strong>King Action</strong>: Move 1 space in any direction, then place a block cube.</li>
-          <li><strong>Card Action</strong>: Move according to your card’s movement pattern; captures allowed.</li>
-          <li><strong>Mushroom Teleport</strong>: Jump to any face-up Mushroom Ring (destination becomes impassable).</li>
+          <li><strong>Card Action</strong>: Move according to your card’s movement pattern; captures allowed. (Origin becomes impassable)</li>
+          <li><strong>Mushroom Teleport</strong>: Jump to any face-up Mushroom Ring.</li>
         </ul>
       </li>
-      <li><strong>Captures</strong>: Wound the opponent and place them on an adjacent highlighted space. Immediate recaptures from last capture origin are prohibited.</li>
+      <br>
+      <li><strong>Captures</strong>: Wound the opponent and place them on an adjacent highlighted space. Immediate recaptures from last capture origin are prohibited. If there are no valid placements after capture; you win!</li>
       <li>Sliding pieces (Rook, Bishop, Queen) cannot pass through impassable spaces but Knights can jump over impassable spaces.</li>
       <li>Start cards become Mushroom Rings after moving.</li>
       <li>The first player to capture twice or flip the last facedown card wins the match.</li>
-      <li>If a player has no legal moves on their turn, they lose.</li>
+      <li>If a player has no valid moves on their turn, they lose.</li>
+      <br>
+      <li><strong>Impassable</strong>: When a card is used in a <strong>Card Action</strong> it becomes impassable. It is turned 90 degrees, and cannot be moved through or landed on; with the exception of the Knight who can jump over them but not land on them</li>
     </ul>
   </div>
 
@@ -391,7 +397,7 @@ let gameState = {}; // Will be initialized in startNewGame
 function makeToken(color) {
   const d = document.createElement('div');
   d.className = `token ${color}`;
-  d.textContent = color === 'white' ? '♔' : '♚'; // Use chess king emojis
+  d.textContent = color === 'white' ? '♔' : '♔'; // ♚♔ Use chess king emojis
   d.setAttribute('aria-label', `${cap(color)} King`); // Accessibility
 
   if (gameState.players[color].isBloodied) d.classList.add('bloodied');
@@ -531,6 +537,7 @@ function startNewMatch() {
   setupBoard();
   
   gameState.currentPlayer = 'white';
+  gameState.oppPlayer = 'black';
   gameState.turnCount = 0;
   
   setMessage(`${cap(gameState.currentPlayer)}, place your token on a 'King Start' card.`);
@@ -783,6 +790,7 @@ function handleMove(r, c, info) {
   choiceBar.classList.remove('show');
   clearHighlights();
 
+  // Handle capture
   if (info.isCapture) {
     me.captures++;
     me.isBloodied = false;
@@ -805,10 +813,18 @@ function handleMove(r, c, info) {
         }
       }
     }
+
+    // Check if there are no valid placement spots
+    if (gameState.highlights.capSpots.length === 0) {
+        endGame(gameState.currentPlayer, `${cap(opponentColor)} has no valid placement spots.`);
+        return;
+    }
+
     setMessage(`${cap(gameState.currentPlayer)}, place your opponent on an adjacent tile.`);
     renderBoard();
 
-    if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
+    // AI auto-placement
+   if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
       setTimeout(makeAIMove, 500);
     }
     return;
@@ -869,7 +885,7 @@ function endTurn() {
   const allMoves = generateAllMovesForPlayer(gameState.currentPlayer);
   if (allMoves.length === 0) {
     const winner = gameState.currentPlayer === 'white' ? 'black' : 'white';
-    endGame(winner, `${cap(gameState.currentPlayer)} has no legal moves.`);
+    endGame(winner, `${cap(gameState.currentPlayer)} has no valid moves.`);
     return;
   }
 
@@ -877,6 +893,7 @@ function endTurn() {
   autoSelectToken();
   saveState();
 
+  // AI move if enabled
   if (gameState.aiEnabled && gameState.currentPlayer === 'black') {
     setTimeout(makeAIMove, 750);
   }
@@ -949,7 +966,7 @@ function showChoices(r, c) {
   toggleButton(mushBtn, mushroomMoves.length > 0, () => highlightMoves(r, c, mushroomMoves, 'mushroom_move'));
 
   if (kingMoves.length === 0 && cardMoves.length === 0 && mushroomMoves.length === 0) {
-    setMessage("No legal moves available.");
+    setMessage("No valid moves available.");
   } else {
     setMessage("Select a move type:");
   }
@@ -1065,7 +1082,7 @@ function makeAIMove() {
 
   const me = gameState.players.black;
 
-  // Handle initial placement
+  // Handle AI initial placement
   if (!me.pos) {
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
@@ -1089,7 +1106,7 @@ function makeAIMove() {
     return;
   }
 
-  // Handle capture placement
+  // Handle AI capture placement
   if (gameState.turnAction === 'capture_placement') {
     const { opponentColor } = gameState.capturePlacementData;
     const capSpots = gameState.highlights.capSpots;
